@@ -1,11 +1,27 @@
 {
   "name": "agent-server",
-  "module": "index.ts",
+  "module": "src/main.ts",
+  "version": "1.0.0",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.2.0",
+    "@hono/zod-openapi": "^0.18.3",
+    "@langchain/core": "^0.3.20",
+    "@langchain/langgraph": "^0.2.24",
+    "@langchain/ollama": "^0.1.2",
+    "@langchain/openai": "^0.3.14",
+    "@scalar/hono-api-reference": "^0.5.163",
+    "hono": "^4.6.12",
+    "hono-pino": "^0.7.0",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0",
+    "tsafe": "^1.8.5",
+    "zod": "^3.23.8"
   }
 }
