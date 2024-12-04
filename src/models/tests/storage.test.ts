@@ -1,6 +1,4 @@
-import { assertEquals, assertExists, assertRejects } from "jsr:@std/assert";
-import { describe, it } from "jsr:@std/testing/bdd";
-import { DataStore } from "../storage/index.ts";
+import { describe, it } from "bun:test";
 
 describe("Storage", () => {
   describe("interface", () => {

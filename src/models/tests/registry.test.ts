@@ -1,5 +1,4 @@
-import { assertEquals, assertExists, assertRejects } from "jsr:@std/assert";
-import { describe, it } from "jsr:@std/testing/bdd";
+import { describe, it } from "bun:test";
 describe("Registry", () => {
   describe("management", () => {
     it("should register and retrieve graph managers correctly", () => {});
