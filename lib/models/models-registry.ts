@@ -9,13 +9,16 @@ export type TModelDef = {
     context?: number;
 };
 
-enum openRouterModels {
-    claude3_5 = "claude3_5",
-    gpt4mini = "gpt4mini",
-    geminiFlash1_5 = "geminiFlash1_5",
-}
+const OpenRouterModelKeys = {
+    claude3_5: "claude3_5",
+    gpt4mini: "gpt4mini",
+    geminiFlash1_5: "geminiFlash1_5",
+} as const;
 
-export const OPEN_ROUTER_MODELS: Record<openRouterModels, TModelDef> = {
+export const OPEN_ROUTER_MODELS: Record<
+    keyof typeof OpenRouterModelKeys,
+    TModelDef
+> = {
     claude3_5: {
         source: "openrouter",
         name: "anthropic/claude-3.5-sonnet:beta",
@@ -39,13 +42,13 @@ export const OPEN_ROUTER_MODELS: Record<openRouterModels, TModelDef> = {
     },
 };
 
-enum ollamaModels {
-    llama3_2__3b = "llama3_2__3b",
-    llama3_1__70b = "llama3_1__70b",
-    qwen2_5__05b = "qwen2_5__05b",
-}
+const OllamaModelKeys = {
+    llama3_2__3b: "llama3_2__3b",
+    llama3_1__70b: "llama3_1__70b",
+    qwen2_5__05b: "qwen2_5__05b",
+};
 
-export const OLLAMA_MODELS: Record<ollamaModels, TModelDef> = {
+export const OLLAMA_MODELS: Record<keyof typeof OllamaModelKeys, TModelDef> = {
     llama3_2__3b: {
         source: "ollama",
         name: "llama3.2:3b",
@@ -66,3 +69,10 @@ export const OLLAMA_MODELS: Record<ollamaModels, TModelDef> = {
         supports_tools: false,
     },
 } as const;
+
+export const ALL_MODELS = {
+    ...OPEN_ROUTER_MODELS,
+    ...OLLAMA_MODELS,
+} as const;
+
+export type AllModelKeys = keyof typeof ALL_MODELS;

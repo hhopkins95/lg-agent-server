@@ -1,12 +1,30 @@
 import { ChatOllama } from "@langchain/ollama";
 import { ChatOpenAI } from "@langchain/openai";
 import {
+  ALL_MODELS,
+  type AllModelKeys,
   OLLAMA_MODELS,
   OPEN_ROUTER_MODELS,
   type TModelDef,
 } from "./models-registry";
 
-export const getLLM = (model: TModelDef) => {
+// Function overload signatures
+export function getLLM(model: TModelDef): ChatOllama | ChatOpenAI;
+export function getLLM(modelName: AllModelKeys): ChatOllama | ChatOpenAI;
+
+// Implementation
+export function getLLM(
+  modelInput: TModelDef | AllModelKeys,
+): ChatOllama | ChatOpenAI {
+  // If modelInput is a string (AllModelKeys), convert it to TModelDef
+  const model: TModelDef = typeof modelInput === "string"
+    ? (ALL_MODELS[modelInput] as TModelDef)
+    : modelInput;
+
+  if (!model) {
+    throw new Error(`Invalid model: ${modelInput}`);
+  }
+
   switch (model.source) {
     case "openrouter":
       return getOpenRouterLLM(model.name);
@@ -15,8 +33,7 @@ export const getLLM = (model: TModelDef) => {
     default:
       throw new Error("Unknown model source");
   }
-};
-
+}
 export const getOllamaLLM = (modelName: string) => {
   const model = new ChatOllama({
     model: modelName,
