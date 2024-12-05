@@ -10,7 +10,7 @@ import type {
   GraphRouterGenerator,
   GraphServerProp,
   ServerConfig,
-} from "./types.ts";
+} from "../core/types.ts";
 import { assistantsRouter } from "./routers/assistants/assistants.index.ts";
 import { indexRouter } from "./routers/index.route.ts";
 import { threadsRouter } from "./routers/threads/threads.index.ts";

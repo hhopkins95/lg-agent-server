@@ -1,7 +1,7 @@
-import { AppRouteHandler } from "@/lib/hono/types.ts";
+import { AppRouteHandler } from "../../lib/hono/types.ts";
 import { HTTPException } from "hono/http-exception";
-import { GRAPH_REGISTRY } from "../../models/registry.ts";
-import { GraphServerConfiguration } from "../../types.ts";
+import { GRAPH_REGISTRY } from "../../../src/models/registry.ts";
+import { GraphServerConfiguration } from "../../../core/types.ts";
 import type {
   CreateBackgroundRunRoute,
   CreateRunAndWaitRoute,

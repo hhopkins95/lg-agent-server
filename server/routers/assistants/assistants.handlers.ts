@@ -1,12 +1,15 @@
-import { GraphServerConfiguration, GraphServerProp } from "../../types.ts";
-import { AppRouteHandler } from "@/lib/hono/types.ts";
+import {
+  GraphServerConfiguration,
+  GraphServerProp,
+} from "../../../core/types.ts";
+import { AppRouteHandler } from "../../lib/hono/types.ts";
 import { HTTPException } from "hono/http-exception";
 import type {
   CreateAssistantRoute,
   GetAssistantRoute,
   ListAssistantsRoute,
 } from "./assistants.routes.ts";
-import { GRAPH_REGISTRY } from "../../models/registry.ts";
+import { GRAPH_REGISTRY } from "../../../src/models/registry.ts";
 
 export const listAllGraphAssistants = (
   graph: GraphServerConfiguration,

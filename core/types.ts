@@ -3,7 +3,7 @@ import {
   BaseCheckpointSaver,
   CompiledStateGraph,
 } from "@langchain/langgraph";
-import type { AppRouterDef } from "@/lib/hono/types.ts";
+import type { AppRouterDef } from "../server/lib/hono/types.ts";
 import { z } from "@hono/zod-openapi";
 
 /**
@@ -19,7 +19,7 @@ export type ServerConfig = {
 import type {
   GraphServerConfiguration,
   GraphServerProp,
-} from "./app-prop-types.ts";
+} from "../src/app-prop-types.ts";
 export { type GraphServerConfiguration, type GraphServerProp };
 export type GraphRouterGenerator = (
   graph: GraphServerConfiguration,

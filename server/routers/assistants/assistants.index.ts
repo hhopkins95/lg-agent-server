@@ -1,4 +1,4 @@
-import { GraphRouterGenerator } from "@/types.ts";
+import { GraphRouterGenerator } from "../../../core/types.ts";
 import { createRouter } from "../../lib/hono/create-base-app.ts";
 import * as handlers from "./assistants.handlers.ts";
 import * as routes from "./assistants.routes.ts";

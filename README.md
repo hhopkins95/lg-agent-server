@@ -1,15 +1,26 @@
-# agent-server
+## Langgraph Agent Toolkit
 
-To install dependencies:
+purpose of this package : provide set of helpers and classes for building and
+operating LangGraph agents.
 
-```bash
-bun install
-```
+### Dirs :
 
-To run:
+**core/**
 
-```bash
-bun run index.ts
-```
+- classes for managing graphs / state and invoking graphs
+- provide support for checkpoints, threads, streaming, runs, etc..
 
-This project was created using `bun init` in bun v1.1.38. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+**server/**
+
+- boiler to generate Hono API servers for graphs
+- given a graph, generate a Hono API server and typed hono RPC client for that
+  graph
+
+**cli/**
+
+- command line interface for LangGraph agents
+- communicates with a Server instance
+
+****example_agents**/**
+
+- example agents for testing and learning how to use LangGraph

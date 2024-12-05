@@ -1,8 +1,8 @@
-import { HTTP_STATUS_CODES } from "@/lib/hono/constants/index.ts";
+import { HTTP_STATUS_CODES } from "../lib/hono/constants/index.ts";
 import { createRouter } from "../lib/hono/create-base-app.ts";
-import { jsonContent } from "@/lib/hono/openapi/helpers/index.ts";
-import { createMessageObjectSchema } from "@/lib/hono/openapi/schemas/index.ts";
-import type { AppRouterDef } from "@/lib/hono/types.ts";
+import { jsonContent } from "../lib/hono/openapi/helpers/index.ts";
+import { createMessageObjectSchema } from "../lib/hono/openapi/schemas/index.ts";
+import type { AppRouterDef } from "../lib/hono/types.ts";
 
 // Reference Route
 const router = createRouter()
