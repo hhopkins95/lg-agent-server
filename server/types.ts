@@ -1,31 +1,19 @@
 import { z } from "@hono/zod-openapi";
 import { Annotation, CompiledStateGraph } from "@langchain/langgraph";
-import type { Assistant } from "../core/types.ts";
-// Helper types for strict type checking
-
-type StrictEqual<X, Y> = (<T>() => T extends X ? 1 : 2) extends
-  (<T>() => T extends Y ? 1 : 2)
-  ? (<T>() => T extends Y ? 1 : 2) extends (<T>() => T extends X ? 1 : 2) ? true
-  : false
-  : false;
-
-// Validation result type
-type ValidationResult<TAnnotation, TSchema> = {
-  annotation: TAnnotation;
-  schema: TSchema;
-};
-
-// Strict validation type
-type StrictValidateStateTypes<
-  TAnnotation extends ReturnType<typeof Annotation.Root<any>>,
-  TSchema extends z.ZodType,
-> = StrictEqual<z.infer<TSchema>, TAnnotation["State"]> extends true
-  ? ValidationResult<TAnnotation, TSchema>
-  : never;
+import type { TAssistant } from "@/core/types.ts";
+import type {
+  StrictEqual,
+  StrictValidateStateTypes,
+  ValidationResult,
+} from "@/utils/type-helpers.ts";
 
 type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
 /**
  * Graph Server -- Defines input definition for a graph server
+ *
+ * Includes zod schemas as well as annotaitions to allow for better route validation, and potentially client ui / app generation based on the schemass
+ *
+ * Uses `StrictValidateStateTypes` to ensure that the schemas match the annotation types
  */
 export type GraphServerConfiguration<
   TStateAnnotation extends TAnnotation = TAnnotation,
@@ -34,7 +22,7 @@ export type GraphServerConfiguration<
   TConfigSchema extends z.ZodType = z.ZodType,
 > = {
   graph_name: string;
-  graph: CompiledStateGraph<any, any, any, any>;
+  graph: CompiledStateGraph<any, any>;
 
   // Types for state / config
   state_annotation: TStateAnnotation;
@@ -47,7 +35,7 @@ export type GraphServerConfiguration<
   default_config: z.infer<TConfigSchema>;
 
   // Assistants to launch along with the default assistant
-  launch_assistants?: Array<Assistant<TConfigSchema>>;
+  launch_assistants?: Array<TAssistant<TConfigAnnotation>>;
 };
 /**
  * Graph server prop type

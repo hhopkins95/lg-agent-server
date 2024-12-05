@@ -1,6 +1,6 @@
 import type { z } from "@hono/zod-openapi";
 import type { Annotation, CompiledStateGraph } from "@langchain/langgraph";
-import type { Assistant } from "../core/types_old.ts";
+import { assert } from "tsafe";
 
 // Helper types for strict type checking
 export type StrictEqual<X, Y> = (<T>() => T extends X ? 1 : 2) extends
@@ -25,3 +25,5 @@ export type StrictValidateStateTypes<
     : never;
 
 export type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
+
+export const assertTypesAreEqual = assert;

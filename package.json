@@ -3,6 +3,11 @@
   "module": "src/main.ts",
   "version": "1.0.0",
   "type": "module",
+
+  "scripts": {
+    "test-core": "bun test core --watch"
+  },
+
   "devDependencies": {
     "@types/bun": "latest"
   },

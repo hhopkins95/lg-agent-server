@@ -1,8 +1,9 @@
-import { Assistant, GraphServerConfiguration, Thread } from "../types.ts";
-import { GraphStateManager } from "./graph.ts";
-import { FileSystemStore } from "./storage/filesystem.ts";
-import { InMemoryStore } from "./storage/index.ts";
-import { DataStore } from "./storage/types.ts";
+import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAssistant, TGraphDef, TThread } from "@/core/types.ts";
+import { GraphStateManager } from "@/core/graph.ts";
+import { FileSystemStore } from "@/core/storage/filesystem.ts";
+import { InMemoryStore } from "@/core/storage/index.ts";
+import type { DataStore } from "@/core/storage/types.ts";
 
 /**
  * A singleton registry for managing all graph managers.
@@ -10,7 +11,7 @@ import { DataStore } from "./storage/types.ts";
  */
 class GraphRegistry {
   private static instance: GraphRegistry;
-  private GraphManagers: Map<string, GraphStateManager<any>>;
+  private GraphManagers: Map<string, GraphStateManager<any, any, any, any>>;
 
   private constructor() {
     this.GraphManagers = new Map();
@@ -32,34 +33,35 @@ class GraphRegistry {
    * @param dataPath Optional data path for storage -- if provided, will use a file store
    * @throws Error if a manager for this graph already exists
    */
-  public async registerGraph(
-    graph: GraphServerConfiguration,
+  public async registerGraph<
+    TState extends TAnnotation,
+    TInput extends TAnnotation,
+    TOutput extends TAnnotation,
+    TConfig extends TAnnotation,
+  >(
+    graph: TGraphDef<TState, TInput, TOutput, TConfig>,
     dataPath?: string,
   ) {
-    if (this.GraphManagers.has(graph.graph_name)) {
-      throw new Error(`Graph manager for ${graph.graph_name} already exists`);
+    if (this.GraphManagers.has(graph.name)) {
+      throw new Error(`Graph manager for ${graph.name} already exists`);
     }
 
-    let assistantStore: DataStore<Assistant<typeof graph["config_schema"]>>;
-    let threadStore: DataStore<Thread<typeof graph["state_schema"]>>;
+    let assistantStore: DataStore<TAssistant<TConfig>>;
+    let threadStore: DataStore<TThread<TState>>;
 
     if (dataPath) {
-      // Create filesystem stores with Zod schema validation
-      assistantStore = new FileSystemStore<
-        Assistant<typeof graph["config_schema"]>
-      >(
+      // Create filesystem stores
+      assistantStore = new FileSystemStore<TAssistant<TConfig>>(
         `${dataPath}/assistants`,
       );
 
-      threadStore = new FileSystemStore<Thread<typeof graph["state_schema"]>>(
+      threadStore = new FileSystemStore<TThread<TState>>(
         `${dataPath}/threads`,
       );
     } else {
-      // Create in-memory stores (validation handled by managers)
-      assistantStore = new InMemoryStore<
-        Assistant<typeof graph["config_schema"]>
-      >();
-      threadStore = new InMemoryStore<Thread<typeof graph["state_schema"]>>();
+      // Create in-memory stores
+      assistantStore = new InMemoryStore<TAssistant<TConfig>>();
+      threadStore = new InMemoryStore<TThread<TState>>();
     }
 
     const manager = new GraphStateManager({
@@ -68,7 +70,7 @@ class GraphRegistry {
       threadStore,
     });
     await manager.initialize();
-    this.GraphManagers.set(graph.graph_name, manager);
+    this.GraphManagers.set(graph.name, manager);
   }
 
   /**
@@ -77,7 +79,7 @@ class GraphRegistry {
    * @returns The graph manager instance
    * @throws Error if the manager does not exist
    */
-  public getManager(name: string): GraphStateManager<any> {
+  public getManager(name: string): GraphStateManager<any, any, any, any> {
     const manager = this.GraphManagers.get(name);
     if (!manager) {
       throw new Error(`Graph manager for ${name} not found`);
@@ -96,7 +98,7 @@ class GraphRegistry {
   /**
    * Get all registered graph managers
    */
-  public getAllManagers(): GraphStateManager<any>[] {
+  public getAllManagers(): GraphStateManager<any, any, any, any>[] {
     return Array.from(this.GraphManagers.values());
   }
 

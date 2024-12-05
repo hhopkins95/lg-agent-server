@@ -7,19 +7,44 @@ import {
   START,
   StateGraph,
 } from "@langchain/langgraph";
-
-import {
-  ConfigurationAnnotation,
-  ConfigurationSchema,
-  ensureConfiguration,
-} from "./config.ts";
-
-import { assert, type Equals } from "tsafe";
 import { z } from "zod";
-
 import { ChatOpenAI } from "@langchain/openai";
-import { ChatOllama } from "@langchain/ollama";
-import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
+
+/**
+ * Define the configurable parameters for the agent.
+ */
+import { SYSTEM_PROMPT_TEMPLATE } from "./prompts.ts";
+
+const ConfigurationAnnotation = Annotation.Root({
+  /**
+   * The system prompt to be used by the agent.
+   */
+  systemPromptTemplate: Annotation<string>,
+
+  /**
+   * The name of the language model to be used by the agent.
+   */
+  model: Annotation<string>,
+});
+
+const ConfigurationSchema = z.object({
+  systemPromptTemplate: z.string(),
+  model: z.string(),
+});
+
+export function ensureConfiguration(
+  config: LangGraphRunnableConfig,
+): typeof ConfigurationAnnotation.State {
+  /**
+   * Ensure the defaults are populated.
+   */
+  const configurable = config.configurable ?? {};
+  return {
+    systemPromptTemplate: configurable.systemPromptTemplate ??
+      SYSTEM_PROMPT_TEMPLATE,
+    model: configurable.model ?? "claude-3-5-sonnet-20240620",
+  };
+}
 
 /**
  * STATE
@@ -28,17 +53,6 @@ const GraphStateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
   foo: Annotation<number>,
 });
-
-// const StateSchema = z.object({
-//   messages: z.instanceof(BaseMessage).array(),
-//   foo: z.number(),
-// });
-
-// // Assert that the zod schema and the annotation states are the same
-// type ZodState = z.infer<typeof StateSchema>;
-// type AnnotationState = typeof GraphStateAnnotation.State;
-
-// assert<Equals<ZodState, AnnotationState>>(); // verify that the schema and annotation states are the same. Schema is required for setting up the graph server properly. This will also be done in the create server function
 
 /**
  * TOOLS
