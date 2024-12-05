@@ -1,6 +1,11 @@
-import { Assistant, GraphServerConfiguration, Run, Thread } from "../types.ts";
+import type {
+  Assistant,
+  GraphServerConfiguration,
+  Run,
+  Thread,
+} from "./types_old.ts";
 import { AssistantManager } from "./assistant.ts";
-import { DataStore } from "./storage/index.ts";
+import { type DataStore } from "./storage/index.ts";
 import { ThreadManager } from "./thread.ts";
 import { type z } from "zod";
 
@@ -20,7 +25,7 @@ export interface GraphManagerConfig<
  * Acts as the main entry point for graph-related operations
  * @template T - The specific graph type being managed
  */
-export class GraphManager<T extends GraphServerConfiguration> {
+export class GraphStateManager<T extends GraphServerConfiguration> {
   protected assistants: AssistantManager<T>;
   protected threads: ThreadManager<T>;
   protected graphConfig: T;

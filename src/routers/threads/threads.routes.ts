@@ -1,6 +1,6 @@
-import { ErrorResponseSchema } from "../../lib/hono/constants/errors.ts";
-import { HTTP_STATUS_CODES } from "../../lib/hono/constants/index.ts";
-import jsonContent from "../../lib/hono/openapi/helpers/json-content.ts";
+import { ErrorResponseSchema } from "@/lib/hono/constants/errors.ts";
+import { HTTP_STATUS_CODES } from "@/lib/hono/constants/index.ts";
+import jsonContent from "@/lib/hono/openapi/helpers/json-content.ts";
 import { createRoute, z } from "@hono/zod-openapi";
 import {
   type GraphServerConfiguration,

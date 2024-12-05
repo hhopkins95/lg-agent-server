@@ -1,4 +1,4 @@
-import CreateGraphServer from "./app.ts";
+import CreateGraphServer from "../server./src/app.ts";
 import {
   ConfigurationAnnotation,
   ConfigurationSchema,

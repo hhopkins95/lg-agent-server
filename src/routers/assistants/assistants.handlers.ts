@@ -2,7 +2,7 @@ import {
   GraphServerConfiguration,
   GraphServerProp,
 } from "../../../core/types_old.ts";
-import { AppRouteHandler } from "../../lib/hono/types.ts";
+import { AppRouteHandler } from "@/lib/hono/types.ts";
 import { HTTPException } from "hono/http-exception";
 import type {
   CreateAssistantRoute,

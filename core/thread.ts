@@ -1,5 +1,5 @@
 import { DataStoreFilter } from "@/models/storage/types.ts";
-import { GraphServerConfiguration, Thread, ThreadSchema } from "./types.ts";
+import { GraphServerConfiguration, Thread, ThreadSchema } from "./types_old.ts";
 import { DataStore } from "../../core./src/models/storage/index.ts";
 
 /**

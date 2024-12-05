@@ -1,5 +1,5 @@
 import { Assistant, GraphServerConfiguration, Thread } from "../types.ts";
-import { GraphManager } from "./graph.ts";
+import { GraphStateManager } from "./graph.ts";
 import { FileSystemStore } from "./storage/filesystem.ts";
 import { InMemoryStore } from "./storage/index.ts";
 import { DataStore } from "./storage/types.ts";
@@ -10,7 +10,7 @@ import { DataStore } from "./storage/types.ts";
  */
 class GraphRegistry {
   private static instance: GraphRegistry;
-  private GraphManagers: Map<string, GraphManager<any>>;
+  private GraphManagers: Map<string, GraphStateManager<any>>;
 
   private constructor() {
     this.GraphManagers = new Map();
@@ -62,7 +62,7 @@ class GraphRegistry {
       threadStore = new InMemoryStore<Thread<typeof graph["state_schema"]>>();
     }
 
-    const manager = new GraphManager({
+    const manager = new GraphStateManager({
       graphConfig: graph,
       assistantStore,
       threadStore,
@@ -77,7 +77,7 @@ class GraphRegistry {
    * @returns The graph manager instance
    * @throws Error if the manager does not exist
    */
-  public getManager(name: string): GraphManager<any> {
+  public getManager(name: string): GraphStateManager<any> {
     const manager = this.GraphManagers.get(name);
     if (!manager) {
       throw new Error(`Graph manager for ${name} not found`);
@@ -96,7 +96,7 @@ class GraphRegistry {
   /**
    * Get all registered graph managers
    */
-  public getAllManagers(): GraphManager<any>[] {
+  public getAllManagers(): GraphStateManager<any>[] {
     return Array.from(this.GraphManagers.values());
   }
 

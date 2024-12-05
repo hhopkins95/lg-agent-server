@@ -1,4 +1,4 @@
-import { AppRouteHandler } from "../../lib/hono/types.ts";
+import { AppRouteHandler } from "@/lib/hono/types.ts";
 import { HTTPException } from "hono/http-exception";
 import { GRAPH_REGISTRY } from "../../../src/models/registry.ts";
 import { GraphServerConfiguration } from "../../../core/types_old.ts";

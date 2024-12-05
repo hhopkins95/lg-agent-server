@@ -9,10 +9,10 @@ import {
 } from "bun:test";
 import { testGraph } from "@/lib/utils/getTestGraph.ts";
 import { GRAPH_REGISTRY } from "@/models/registry.ts";
-import { GraphManager } from "../graph.ts";
+import { GraphStateManager } from "../graph.ts";
 
 describe("GraphManager", () => {
-  let manager: GraphManager<typeof testGraph>;
+  let manager: GraphStateManager<typeof testGraph>;
 
   beforeEach(async () => {
     await GRAPH_REGISTRY.registerGraph(testGraph);
@@ -27,7 +27,7 @@ describe("GraphManager", () => {
     it("should initialize with valid configuration", () => {
       expect(manager).toBeDefined();
       // exists(manager);
-      expect(manager instanceof GraphManager).toBe(true);
+      expect(manager instanceof GraphStateManager).toBe(true);
       // assertEquals(manager instanceof GraphManager, true);
     });
 
@@ -192,7 +192,7 @@ describe("GraphRegistry", () => {
     it("should register and retrieve managers correctly", () => {
       const manager = GRAPH_REGISTRY.getManager(testGraph.graph_name);
       expect(manager).toBeDefined();
-      expect(manager instanceof GraphManager).toBe(true);
+      expect(manager instanceof GraphStateManager).toBe(true);
     });
 
     it("should maintain proper references between components", () => {

@@ -1,4 +1,4 @@
-import { type GraphServerProp } from "../../../core/types.ts";
+import { type GraphServerProp } from "../core/types_old.ts";
 import { type Annotation } from "@langchain/langgraph";
 import { z } from "zod";
 

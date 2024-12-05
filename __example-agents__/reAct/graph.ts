@@ -2,6 +2,7 @@ import {
   Annotation,
   END,
   type LangGraphRunnableConfig,
+  MemorySaver,
   MessagesAnnotation,
   START,
   StateGraph,
@@ -28,16 +29,16 @@ const GraphStateAnnotation = Annotation.Root({
   foo: Annotation<number>,
 });
 
-const StateSchema = z.object({
-  messages: z.instanceof(BaseMessage).array(),
-  foo: z.number(),
-});
+// const StateSchema = z.object({
+//   messages: z.instanceof(BaseMessage).array(),
+//   foo: z.number(),
+// });
 
-// Assert that the zod schema and the annotation states are the same
-type ZodState = z.infer<typeof StateSchema>;
-type AnnotationState = typeof GraphStateAnnotation.State;
+// // Assert that the zod schema and the annotation states are the same
+// type ZodState = z.infer<typeof StateSchema>;
+// type AnnotationState = typeof GraphStateAnnotation.State;
 
-assert<Equals<ZodState, AnnotationState>>(); // verify that the schema and annotation states are the same. Schema is required for setting up the graph server properly. This will also be done in the create server function
+// assert<Equals<ZodState, AnnotationState>>(); // verify that the schema and annotation states are the same. Schema is required for setting up the graph server properly. This will also be done in the create server function
 
 /**
  * TOOLS
@@ -70,20 +71,20 @@ async function callModel(
 
   console.log({ curFoo, messages });
 
-  // const llm = new ChatOpenAI({
-  //   model: "gpt-4o",
-  //   temperature: 0,
-  // }).bindTools([addNumbersTool]);
-
-  const llm = new ChatOllama({
-    model: "llama3",
+  const llm = new ChatOpenAI({
+    model: "gpt-4o",
     temperature: 0,
   }).bindTools([addNumbersTool]);
+
+  // const llm = new ChatOllama({
+  //   model: "llama3",
+  //   temperature: 0,
+  // }).bindTools([addNumbersTool]);
 
   const res = await llm.invoke(messages);
 
   return {
-    messages: [res],
+    messages: res,
     foo: curFoo + 1,
   };
 }
@@ -129,6 +130,7 @@ const workflow = new StateGraph(
 export const graph = workflow.compile({
   interruptBefore: [], // if you want to update the state before calling the tools
   interruptAfter: [],
+  checkpointer: new MemorySaver(),
 });
 
 // Export other things needed for the graph server
@@ -136,12 +138,34 @@ export {
   ConfigurationAnnotation,
   ConfigurationSchema,
   GraphStateAnnotation,
-  StateSchema,
+  // StateSchema,
 };
 
-const messages = [
-  new HumanMessage("What is 1 + 1?"),
-];
+// const messages = [
+//   new HumanMessage("What is 1 + 1?"),
+// ];
+
+// const thread_id = "abc";
+
+// const abr = await graph.invoke({
+//   messages,
+// }, {
+//   configurable: {
+//     model: "abv",
+//     systemPromptTemplate: "",
+//     thread_id: thread_id,
+//   },
+// });
+
+// console.log({ abr });
+
+// const foo = await graph.getState({
+//   configurable: {
+//     thread_id,
+//   },
+// })
+
+// console.log(foo.values);
 
 // const stream = await graph.stream({
 //   messages,
