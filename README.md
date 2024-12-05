@@ -21,6 +21,10 @@ operating LangGraph agents.
 - command line interface for LangGraph agents
 - communicates with a Server instance
 
+**lib/**
+
+- misc helpers and modules for agent development
+
 ****example_agents**/**
 
 - example agents for testing and learning how to use LangGraph
