@@ -1,7 +1,7 @@
 import type { DataStoreFilter } from "./storage/types.ts";
 import type { TGraphDef, TThread, TThreadState } from "./types.ts";
 import type { DataStore } from "./storage/index.ts";
-import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAnnotation } from "@/lib/utils/type-helpers.ts";
 
 /**
  * Manages threads for a specific graph type

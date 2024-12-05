@@ -1,4 +1,4 @@
-import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAnnotation } from "@/lib/utils/type-helpers.ts";
 import type { TAssistant, TGraphDef, TThread } from "./types.ts";
 import { AssistantManager } from "./assistant.ts";
 import { type DataStore } from "./storage/index.ts";

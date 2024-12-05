@@ -5,7 +5,7 @@ import type {
   StrictEqual,
   StrictValidateStateTypes,
   ValidationResult,
-} from "@/utils/type-helpers.ts";
+} from "@/lib/utils/type-helpers";
 
 type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
 /**

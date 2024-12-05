@@ -1,4 +1,4 @@
-import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAnnotation } from "@/lib/utils/type-helpers";
 import type { TAssistant, TGraphDef, TThread } from "@/core/types.ts";
 import { GraphStateManager } from "@/core/graph.ts";
 import { FileSystemStore } from "@/core/storage/filesystem.ts";

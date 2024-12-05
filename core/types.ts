@@ -1,4 +1,4 @@
-import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAnnotation } from "@/lib/utils/type-helpers";
 import type { CompiledStateGraph, StateSnapshot } from "@langchain/langgraph";
 /**
  * Graph Def
