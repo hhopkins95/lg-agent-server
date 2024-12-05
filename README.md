@@ -28,3 +28,4 @@ operating LangGraph agents.
 ****example_agents**/**
 
 - example agents for testing and learning how to use LangGraph
+- demonstratation different concepts / agent compositions
