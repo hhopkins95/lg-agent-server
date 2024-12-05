@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { Annotation, CompiledStateGraph } from "@langchain/langgraph";
-import type { Assistant } from "../core/types_old.ts";
+import type { Assistant } from "../core/types.ts";
 // Helper types for strict type checking
 
 type StrictEqual<X, Y> = (<T>() => T extends X ? 1 : 2) extends

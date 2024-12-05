@@ -1,24 +1,20 @@
-import {
-  Assistant,
-  AssistantSchema,
-  GraphServerConfiguration,
-} from "../types.ts";
-import { DataStore } from "./storage/index.ts";
-import { z } from "zod";
+import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAssistant, TGraphDef } from "./types.ts";
+import type { DataStore } from "./storage/index.ts";
 
 /**
  * Manages assistants for a specific graph type
- * @template T - The specific graph type being managed
+ * @template TConfig - The configuration type annotation
  */
-export class AssistantManager<T extends GraphServerConfiguration> {
+export class AssistantManager<TConfig extends TAnnotation> {
   /**
    * Creates a new AssistantManager
    * @param graphConfig - The graph this manager is associated with
    * @param store - The storage implementation to use
    */
   constructor(
-    protected graphConfig: T,
-    protected store: DataStore<Assistant>,
+    protected graphConfig: TGraphDef<any, any, any, TConfig>,
+    protected store: DataStore<TAssistant<TConfig>>,
   ) {
   }
 
@@ -36,14 +32,14 @@ export class AssistantManager<T extends GraphServerConfiguration> {
   protected async loadAssistantsFromConfig() {
     const should_upsert = false; // TODO -- pass this in through config
 
-    const all_assistants: Assistant[] = [];
+    const all_assistants: TAssistant<TConfig>[] = [];
 
     if (this.graphConfig.default_config) {
       const config = this.graphConfig.default_config;
       all_assistants.push({
         id: "__DEFAULT__",
-        assistant_name: "__DEFAULT__",
-        description: `Default configuration for ${this.graphConfig.graph_name}`,
+        graph_name: this.graphConfig.name,
+        description: `Default configuration for ${this.graphConfig.name}`,
         config,
       });
     }
@@ -73,21 +69,21 @@ export class AssistantManager<T extends GraphServerConfiguration> {
   /**
    * Gets an assistant by ID
    */
-  async get(id: string): Promise<Assistant | undefined> {
+  async get(id: string): Promise<TAssistant<TConfig> | undefined> {
     return await this.store.get(id);
   }
 
   /**
    * Get Default Assistant
    */
-  async getDefaultAssistant(): Promise<Assistant | undefined> {
+  async getDefaultAssistant(): Promise<TAssistant<TConfig> | undefined> {
     return await this.store.get("__DEFAULT__");
   }
 
   /**
    * List all Assistants
    */
-  async listAllAssistants(): Promise<Assistant[]> {
+  async listAllAssistants(): Promise<TAssistant<TConfig>[]> {
     return await this.store.list();
   }
 
@@ -96,10 +92,8 @@ export class AssistantManager<T extends GraphServerConfiguration> {
    * @param assistant - The assistant to create
    */
   async createAssistant(
-    assistant: Assistant,
-  ): Promise<Assistant<T["config_schema"]>> {
-    // Validate against schema before storing
-    AssistantSchema(this.graphConfig.config_schema).parse(assistant);
+    assistant: TAssistant<TConfig>,
+  ): Promise<TAssistant<TConfig>> {
     return this.store.create(assistant);
   }
 
@@ -110,15 +104,12 @@ export class AssistantManager<T extends GraphServerConfiguration> {
    */
   async updateAssistant(
     id: string,
-    updates: Partial<Assistant>,
-  ): Promise<Assistant | undefined> {
+    updates: Partial<TAssistant<TConfig>>,
+  ): Promise<TAssistant<TConfig> | undefined> {
     const existing = await this.store.get(id);
     if (!existing) return undefined;
 
     const updated = { ...existing, ...updates };
-    // Validate updated assistant
-    AssistantSchema(this.graphConfig.config_schema).parse(updated);
-
     return this.store.update(id, updated);
   }
 }

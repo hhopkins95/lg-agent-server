@@ -1,40 +1,48 @@
-import type {
-  Assistant,
-  GraphServerConfiguration,
-  Run,
-  Thread,
-} from "./types_old.ts";
+import type { TAnnotation } from "@/utils/type-helpers.ts";
+import type { TAssistant, TGraphDef, TThread } from "./types.ts";
 import { AssistantManager } from "./assistant.ts";
 import { type DataStore } from "./storage/index.ts";
 import { ThreadManager } from "./thread.ts";
-import { type z } from "zod";
 
 /**
  * Configuration for creating a GraphManager
  */
 export interface GraphManagerConfig<
-  TGraphConfig extends GraphServerConfiguration,
+  TState extends TAnnotation,
+  TInput extends TAnnotation,
+  TOutput extends TAnnotation,
+  TConfig extends TAnnotation,
 > {
-  graphConfig: TGraphConfig;
-  assistantStore: DataStore<Assistant<TGraphConfig["config_schema"]>>;
-  threadStore: DataStore<Thread<TGraphConfig["state_schema"]>>;
+  graphConfig: TGraphDef<TState, TInput, TOutput, TConfig>;
+  assistantStore: DataStore<TAssistant<TConfig>>;
+  threadStore: DataStore<TThread<TState>>;
 }
 
 /**
  * Manages all aspects of a graph, including assistants, threads, and runs
  * Acts as the main entry point for graph-related operations
- * @template T - The specific graph type being managed
+ * @template TState - The state type annotation
+ * @template TInput - The input type annotation
+ * @template TOutput - The output type annotation
+ * @template TConfig - The config type annotation
  */
-export class GraphStateManager<T extends GraphServerConfiguration> {
-  protected assistants: AssistantManager<T>;
-  protected threads: ThreadManager<T>;
-  protected graphConfig: T;
+export class GraphStateManager<
+  TState extends TAnnotation,
+  TInput extends TAnnotation,
+  TOutput extends TAnnotation,
+  TConfig extends TAnnotation,
+> {
+  protected assistants: AssistantManager<TConfig>;
+  protected threads: ThreadManager<TState>;
+  protected graphConfig: TGraphDef<TState, TInput, TOutput, TConfig>;
 
   /**
    * Creates a new GraphManager
    * @param config - Configuration for the graph manager
    */
-  constructor(config: GraphManagerConfig<T>) {
+  constructor(
+    config: GraphManagerConfig<TState, TInput, TOutput, TConfig>,
+  ) {
     this.graphConfig = config.graphConfig;
 
     // Initialize managers with their respective stores
@@ -44,7 +52,6 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     );
 
     this.threads = new ThreadManager(
-      this.graphConfig,
       config.threadStore,
     );
   }
@@ -61,28 +68,28 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
   /**
    * Gets the assistant manager
    */
-  getAssistantManager(): AssistantManager<T> {
+  getAssistantManager(): AssistantManager<TConfig> {
     return this.assistants;
   }
 
   /**
    * Gets the thread manager
    */
-  getThreadManager(): ThreadManager<T> {
+  getThreadManager(): ThreadManager<TState> {
     return this.threads;
   }
 
   /**
    * Gets all assistants for this graph
    */
-  async getAssistants(): Promise<Assistant<T["config_schema"]>[]> {
+  async getAssistants(): Promise<TAssistant<TConfig>[]> {
     return await this.assistants.listAllAssistants();
   }
 
   /**
    * Gets all threads for this graph
    */
-  async getThreads(): Promise<Thread<T["state_schema"]>[]> {
+  async getThreads(): Promise<TThread<TState>[]> {
     return await this.threads.listAllThreads();
   }
 
@@ -90,10 +97,9 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
    * Creates a new assistant
    * @param config - Configuration for the assistant
    */
-
   async createAssistant(
-    config: Omit<Assistant<T["config_schema"]>, "id">,
-  ): Promise<Assistant<T["config_schema"]>> {
+    config: Omit<TAssistant<TConfig>, "id">,
+  ): Promise<TAssistant<TConfig>> {
     return await this.assistants.createAssistant({
       id: `assistant_${crypto.randomUUID()}`,
       ...config,
@@ -101,21 +107,16 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
   }
 
   /**
-   * Creates a new thread for an assistant
-   * @param assistantId - ID of the assistant to create the thread for
+   * Creates a new thread
    * @param config - Configuration for the thread
    */
   async createThread(
-    config?: Partial<Thread<T["state_schema"]>>,
-  ): Promise<Thread<T["state_schema"]>> {
-    // const assistant = await this.assistants.get(assistantId);
-    // if (!assistant) {
-    //   throw new Error(`Assistant ${assistantId} not found`);
-    // }
+    config?: Partial<TThread<TState>>,
+  ): Promise<TThread<TState>> {
     return this.threads.createThread({
-      id: `thread_${crypto.randomUUID()}`,
-      created_at: new Date().toISOString(),
-      ...config,
+      // id: `thread_${crypto.randomUUID()}`,
+      // created_at: new Date(),
+      // ...config,
     });
   }
 
@@ -138,11 +139,11 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     assistantId?: string;
     threadId?: string;
     shouldCreateThread?: boolean;
-    state?: z.infer<T["state_schema"]>;
-    config?: z.infer<T["config_schema"]>;
-  }): Promise<z.infer<T["state_schema"]>> {
+    state?: TState["State"];
+    config?: TConfig["State"];
+  }): Promise<TState["State"]> {
     // Get the assistant that will be used on this run
-    let assistant: Assistant<T["config_schema"]> | undefined;
+    let assistant: TAssistant<TConfig> | undefined;
     if (!assistantId) {
       assistant = await this.assistants.getDefaultAssistant();
     } else {
@@ -153,7 +154,7 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     }
 
     // Get the thread that will be used on this run
-    let thread: Thread<T["state_schema"]> | undefined;
+    let thread: TThread<TState> | undefined;
     if (threadId) {
       thread = await this.threads.get(threadId);
     }
@@ -162,7 +163,7 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     }
 
     // Get the state / config for this run
-    const invokeState = state ?? thread?.cur_state ??
+    const invokeState = state ?? thread?.values ??
       this.graphConfig.default_state;
 
     const invokeConfig = config ?? assistant.config ??
@@ -200,11 +201,11 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     assistantId?: string;
     threadId?: string;
     shouldCreateThread?: boolean;
-    state?: z.infer<T["state_schema"]>;
-    config?: z.infer<T["config_schema"]>;
-  }): AsyncGenerator<z.infer<T["state_schema"]>> {
+    state?: TState["State"];
+    config?: TConfig["State"];
+  }): AsyncGenerator<TState["State"]> {
     // Get the assistant that will be used on this run
-    let assistant: Assistant<T["config_schema"]> | undefined;
+    let assistant: TAssistant<TConfig> | undefined;
     if (!assistantId) {
       assistant = await this.assistants.getDefaultAssistant();
     } else {
@@ -215,7 +216,7 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     }
 
     // Get the thread that will be used on this run
-    let thread: Thread<T["state_schema"]> | undefined;
+    let thread: TThread<TState> | undefined;
     if (threadId) {
       thread = await this.threads.get(threadId);
     }
@@ -224,7 +225,7 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
     }
 
     // Get the state / config for this run
-    const invokeState = state ?? thread?.cur_state ??
+    const invokeState = state ?? thread?.values ??
       this.graphConfig.default_state;
     const invokeConfig = config ?? assistant.config ??
       this.graphConfig.default_config;
@@ -237,7 +238,7 @@ export class GraphStateManager<T extends GraphServerConfiguration> {
       streamMode: "values",
     });
 
-    let finalState: z.infer<T["state_schema"]> | undefined;
+    let finalState: TState["State"] | undefined;
 
     // Yield each state update
     for await (const update of stream) {

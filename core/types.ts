@@ -1,5 +1,5 @@
 import type { TAnnotation } from "@/utils/type-helpers.ts";
-import type { StateSnapshot } from "@langchain/langgraph";
+import type { CompiledStateGraph, StateSnapshot } from "@langchain/langgraph";
 /**
  * Graph Def
  */
@@ -11,6 +11,8 @@ export type TGraphDef<
 > = {
   name: string;
   description?: string; // for documentation
+
+  graph: CompiledStateGraph<any, any>;
 
   // schemas
   state_annotation: TState;
@@ -48,11 +50,10 @@ export type TAssistant<TConfig extends TAnnotation> = {
 
 export type TThread<TState extends TAnnotation> = {
   id: string;
-  graph_name: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
   status: "idle" | "busy" | "interrupted" | "error";
-  values: TState["State"]; // current state values
+  values?: TState["State"]; // current state values
 };
 
 export type TThreadState<TState extends TAnnotation> = StateSnapshot & {
