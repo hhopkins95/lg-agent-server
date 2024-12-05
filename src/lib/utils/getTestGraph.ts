@@ -4,7 +4,7 @@ import {
   graph,
   GraphStateAnnotation,
   StateSchema,
-} from "../../../example-agent/graph.ts";
+} from "../../../example-agents/graph.ts";
 import { getVerifiedGraph } from "./verifyGraphTypes.ts";
 
 export const testGraph = getVerifiedGraph({
@@ -20,5 +20,6 @@ export const testGraph = getVerifiedGraph({
   },
   default_state: {
     foo: 0,
+    messages: [],
   },
 });

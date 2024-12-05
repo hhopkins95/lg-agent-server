@@ -5,7 +5,7 @@ import {
   graph,
   GraphStateAnnotation,
   StateSchema,
-} from "../example-agent/graph.ts";
+} from "../example-agents/graph.ts";
 import env from "./lib/constants/environment.ts";
 
 // Testing -- use to check TS generics
