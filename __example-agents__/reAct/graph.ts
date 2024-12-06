@@ -8,58 +8,28 @@ import {
   StateGraph,
 } from "@langchain/langgraph";
 import { z } from "zod";
-import { ChatOpenAI } from "@langchain/openai";
+import { type AllModelKeys } from "@/lib/models/models-registry";
+import { getLLM } from "@/lib/models/loadLLM";
+import { ToolNode } from "@langchain/langgraph/prebuilt";
+import { tool } from "@langchain/core/tools";
+import { drawGraphPng } from "@/lib/utils/draw-graph-png";
+import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
 
-/**
- * Define the configurable parameters for the agent.
- */
-import { SYSTEM_PROMPT_TEMPLATE } from "./prompts.ts";
-
-const ConfigurationAnnotation = Annotation.Root({
-  /**
-   * The system prompt to be used by the agent.
-   */
-  systemPromptTemplate: Annotation<string>,
-
-  /**
-   * The name of the language model to be used by the agent.
-   */
-  model: Annotation<string>,
+//  CONFIGURATION
+const GraphConfigurationAnnotation = Annotation.Root({
+  model: Annotation<AllModelKeys>,
 });
+const defaultConfig: typeof GraphConfigurationAnnotation.State = {
+  model: "claude3_5",
+};
 
-const ConfigurationSchema = z.object({
-  systemPromptTemplate: z.string(),
-  model: z.string(),
-});
-
-export function ensureConfiguration(
-  config: LangGraphRunnableConfig,
-): typeof ConfigurationAnnotation.State {
-  /**
-   * Ensure the defaults are populated.
-   */
-  const configurable = config.configurable ?? {};
-  return {
-    systemPromptTemplate: configurable.systemPromptTemplate ??
-      SYSTEM_PROMPT_TEMPLATE,
-    model: configurable.model ?? "claude-3-5-sonnet-20240620",
-  };
-}
-
-/**
- * STATE
- */
+// STATE
 const GraphStateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
-  foo: Annotation<number>,
+  count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
-/**
- * TOOLS
- */
-import { tool } from "@langchain/core/tools";
-
-// Example tool
+// TOOLS
 const addNumbersTool = tool((input) => {
   console.log("Add numbers tool called with input", input);
   return input.a + input.b;
@@ -71,40 +41,32 @@ const addNumbersTool = tool((input) => {
     b: z.number().describe("Second number to add."),
   }),
 });
-/**
- * NODES
- */
-// Define the function that calls the model
+
+// NODES
+const tools = [addNumbersTool];
+const toolNode = new ToolNode(tools);
+
 async function callModel(
   state: typeof GraphStateAnnotation.State,
-  config: LangGraphRunnableConfig<typeof ConfigurationAnnotation.State>,
+  runnableConfig: LangGraphRunnableConfig<
+    typeof GraphConfigurationAnnotation.State
+  >,
 ): Promise<typeof GraphStateAnnotation.Update> {
-  const c = ensureConfiguration(config); // if c is not defined, create it with defaults
-  const curFoo = state.foo ?? 0;
+  const c = ensureGraphConfiguration(runnableConfig, defaultConfig); // if c is not defined, create it with defaults
+  const llm = getLLM(c.model).bindTools(tools);
+
+  const curCount = state.count ?? 0;
   const messages = state.messages ?? [];
-
-  console.log({ curFoo, messages });
-
-  const llm = new ChatOpenAI({
-    model: "gpt-4o",
-    temperature: 0,
-  }).bindTools([addNumbersTool]);
-
-  // const llm = new ChatOllama({
-  //   model: "llama3",
-  //   temperature: 0,
-  // }).bindTools([addNumbersTool]);
 
   const res = await llm.invoke(messages);
 
   return {
     messages: res,
-    foo: curFoo + 1,
+    count: curCount + 1,
   };
-}
+} // Call the model
 
-// Define the function that determines whether to continue or not
-const shouldContinue = (state: typeof GraphStateAnnotation.State) => {
+const router = (state: typeof GraphStateAnnotation.State) => {
   const { messages } = state;
   const lastMessage = messages[messages.length - 1];
   if (
@@ -114,78 +76,32 @@ const shouldContinue = (state: typeof GraphStateAnnotation.State) => {
     return "tools";
   }
   return END;
-};
+}; // Determines whether or not to call the tool node, or to end the graph after the 'callModel' node
 
-// Tool node
-import { ToolNode } from "@langchain/langgraph/prebuilt";
-const tools = [addNumbersTool];
-// @ts-ignore -- not sure why this doesn't work -- it's the example from the docs
-const toolNode = new ToolNode(tools);
-
-/**
- * GRAPH
- */
-// Define a new graph. We use the prebuilt MessagesAnnotation to define state:
-// https://langchain-ai.github.io/langgraphjs/concepts/low_level/#messagesannotation
+// GRAPH
 const workflow = new StateGraph(
   GraphStateAnnotation,
-  ConfigurationAnnotation,
+  GraphConfigurationAnnotation,
 )
+  // nodes
   .addNode("callModel", callModel)
   .addNode("tools", toolNode)
+  // edges
   .addEdge(START, "callModel")
   .addEdge("tools", "callModel")
+  // conditional edges (routers)
   .addConditionalEdges(
     "callModel",
-    shouldContinue,
+    router,
     [END, "tools"],
   );
 
 export const graph = workflow.compile({
-  interruptBefore: [], // if you want to update the state before calling the tools
-  interruptAfter: [],
-  checkpointer: new MemorySaver(),
+  // checkpointer: new MemorySaver(),
 });
 
 // Export other things needed for the graph server
 export {
-  ConfigurationAnnotation,
-  ConfigurationSchema,
+  GraphConfigurationAnnotation as ConfigurationAnnotation,
   GraphStateAnnotation,
-  // StateSchema,
 };
-
-// const messages = [
-//   new HumanMessage("What is 1 + 1?"),
-// ];
-
-// const thread_id = "abc";
-
-// const abr = await graph.invoke({
-//   messages,
-// }, {
-//   configurable: {
-//     model: "abv",
-//     systemPromptTemplate: "",
-//     thread_id: thread_id,
-//   },
-// });
-
-// console.log({ abr });
-
-// const foo = await graph.getState({
-//   configurable: {
-//     thread_id,
-//   },
-// })
-
-// console.log(foo.values);
-
-// const stream = await graph.stream({
-//   messages,
-//   foo: 10,
-// });
-
-// for await (const event of stream) {
-//   console.log(event);
-// }

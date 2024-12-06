@@ -7,7 +7,7 @@ import {
   expect,
   it,
 } from "bun:test";
-import { testGraph } from "@/lib/utils/getTestGraph.ts";
+import { testGraph } from "@/lib/utils/testing/getTestGraph.ts";
 import { GRAPH_REGISTRY } from "@/models/registry.ts";
 import { GraphStateManager } from "../graph.ts";
 

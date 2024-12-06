@@ -1,5 +1,6 @@
 import * as tslab from "tslab";
 import { CompiledStateGraph } from "@langchain/langgraph";
+import { writeFile } from "node:fs/promises";
 
 export const drawGraphPng = async (
   // deno-lint-ignore no-explicit-any
@@ -12,7 +13,7 @@ export const drawGraphPng = async (
 
   if (path) {
     const bytes = await image.bytes();
-    await Deno.writeFile(path, bytes);
+    await writeFile(path, bytes);
   } else {
     // this will disply in jupyter
     console.log("Drawing graph...");
