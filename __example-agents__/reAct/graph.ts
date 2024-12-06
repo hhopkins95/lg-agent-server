@@ -2,7 +2,6 @@ import {
   Annotation,
   END,
   type LangGraphRunnableConfig,
-  MemorySaver,
   MessagesAnnotation,
   START,
   StateGraph,
@@ -12,7 +11,6 @@ import { type AllModelKeys } from "@/lib/models/models-registry";
 import { getLLM } from "@/lib/models/loadLLM";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { tool } from "@langchain/core/tools";
-import { drawGraphPng } from "@/lib/utils/draw-graph-png";
 import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
 
 //  CONFIGURATION
@@ -28,6 +26,14 @@ const GraphStateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
   count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
+
+const inputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["count"]; // potentially used downstream for clients
+const outputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["count"]; // potentially used downstream for clients
+
+const defaultState: typeof GraphStateAnnotation.State = {
+  count: 0,
+  messages: [],
+};
 
 // TOOLS
 const addNumbersTool = tool((input) => {
@@ -64,7 +70,7 @@ async function callModel(
     messages: res,
     count: curCount + 1,
   };
-} // Call the model
+}
 
 const router = (state: typeof GraphStateAnnotation.State) => {
   const { messages } = state;
