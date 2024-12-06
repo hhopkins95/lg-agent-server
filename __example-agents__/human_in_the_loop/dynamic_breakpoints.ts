@@ -1,6 +1,7 @@
 import {
   Annotation,
   END,
+  type LangGraphRunnableConfig,
   MemorySaver,
   MessagesAnnotation,
   NodeInterrupt,
@@ -8,12 +9,24 @@ import {
   StateGraph,
 } from "@langchain/langgraph";
 import { type AIMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { tool } from "@langchain/core/tools";
+import { type AllModelKeys } from "@/lib/models/models-registry";
+import { getLLM } from "@/lib/models/loadLLM";
+import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
 import { logEvent } from "utils.js";
 
-const GraphAnnotation = Annotation.Root({
+// CONFIGURATION
+const GraphConfigurationAnnotation = Annotation.Root({
+  model: Annotation<AllModelKeys | null>(),
+});
+
+const defaultConfig: typeof GraphConfigurationAnnotation.State = {
+  model: "claude3_5",
+};
+
+// STATE
+const GraphStateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
   /**
    * Whether or not permission has been granted to refund the user.
@@ -21,11 +34,12 @@ const GraphAnnotation = Annotation.Root({
   refundAuthorized: Annotation<boolean>(),
 });
 
-const llm = new ChatOpenAI({
-  model: "gpt-4o",
-  temperature: 0,
-});
+const defaultState: typeof GraphStateAnnotation.State = {
+  messages: [],
+  refundAuthorized: false,
+};
 
+// TOOLS
 const processRefundTool = tool(
   (input) => {
     return `Successfully processed refund for ${input.productId}`;
@@ -41,52 +55,54 @@ const processRefundTool = tool(
 
 const tools = [processRefundTool];
 
-const callTool = async (state: typeof GraphAnnotation.State) => {
+// NODES
+async function callTool(state: typeof GraphStateAnnotation.State) {
   const { messages, refundAuthorized } = state;
   if (!refundAuthorized) {
     throw new NodeInterrupt("Permission to refund is required.");
   }
 
   const lastMessage = messages[messages.length - 1];
-  // Cast here since `tool_calls` does not exist on `BaseMessage`
   const messageCastAI = lastMessage as AIMessage;
   if (messageCastAI._getType() !== "ai" || !messageCastAI.tool_calls?.length) {
     throw new Error("No tools were called.");
   }
   const toolCall = messageCastAI.tool_calls[0];
 
-  // Invoke the tool to process the refund
   const refundResult = await processRefundTool.invoke(toolCall);
 
   return {
     messages: refundResult,
   };
-};
+}
 
-const callModel = async (state: typeof GraphAnnotation.State) => {
-  const { messages } = state;
-
-  const llmWithTools = llm.bindTools(tools);
-  const result = await llmWithTools.invoke(messages);
+async function callModel(
+  state: typeof GraphStateAnnotation.State,
+  runnableConfig: LangGraphRunnableConfig<
+    typeof GraphConfigurationAnnotation.State
+  >,
+) {
+  const c = ensureGraphConfiguration(runnableConfig, defaultConfig);
+  const llm = getLLM(c.model).bindTools(tools);
+  const result = await llm.invoke(state.messages);
   return { messages: [result] };
-};
+}
 
-const shouldContinue = (state: typeof GraphAnnotation.State) => {
+const shouldContinue = (state: typeof GraphStateAnnotation.State) => {
   const { messages } = state;
-
   const lastMessage = messages[messages.length - 1];
-  // Cast here since `tool_calls` does not exist on `BaseMessage`
   const messageCastAI = lastMessage as AIMessage;
   if (messageCastAI._getType() !== "ai" || !messageCastAI.tool_calls?.length) {
-    // LLM did not call any tools, or it's not an AI message, so we should end.
     return END;
   }
-
-  // Tools are provided, so we should continue.
   return "tools";
 };
 
-const workflow = new StateGraph(GraphAnnotation)
+// GRAPH
+const workflow = new StateGraph(
+  GraphStateAnnotation,
+  GraphConfigurationAnnotation,
+)
   .addNode("agent", callModel)
   .addEdge(START, "agent")
   .addNode("tools", callTool)
@@ -98,10 +114,13 @@ export const graph = workflow.compile({
 });
 
 async function main() {
-  const config = {
-    configurable: { thread_id: "refunder_dynamic" },
+  const config: LangGraphRunnableConfig<
+    typeof GraphConfigurationAnnotation.State
+  > = {
+    configurable: { thread_id: "refunder_dynamic", model: "claude3_5" },
     streamMode: "updates" as const,
   };
+
   const input = {
     messages: [
       {
@@ -111,6 +130,7 @@ async function main() {
     ],
   };
 
+  // First run - will be interrupted due to missing refund authorization
   for await (const event of await graph.stream(input, config)) {
     const key = Object.keys(event)[0];
     if (key) {
@@ -120,22 +140,25 @@ async function main() {
 
   console.log("\n---INTERRUPTING GRAPH TO UPDATE STATE---\n\n");
 
+  // Log the current state before update
   console.log(
     "---refundAuthorized value before state update---",
-    await graph.getState(config), // .values.refundAuthorized,
+    await graph.getState(config),
   );
 
+  // Update the state to authorize the refund
   await graph.updateState(config, { refundAuthorized: true });
 
+  // Log the state after update
   console.log(
     "---refundAuthorized value after state update---",
-    await graph.getState(config), // .values.refundAuthorized,
+    await graph.getState(config),
   );
 
   console.log("\n---CONTINUING GRAPH AFTER STATE UPDATE---\n\n");
 
+  // Continue the graph execution with updated state
   for await (const event of await graph.stream(null, config)) {
-    // Log the event to the terminal
     logEvent(event);
   }
 }
