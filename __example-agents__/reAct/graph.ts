@@ -24,7 +24,7 @@ const defaultConfig: typeof GraphConfigurationAnnotation.State = {
 // STATE
 const GraphStateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
-  count: Annotation<number>, // example number property -- counts how many times the model has been called
+  count: Annotation<number | null>, // example number property -- counts how many times the model has been called
 });
 
 const inputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["count"]; // potentially used downstream for clients

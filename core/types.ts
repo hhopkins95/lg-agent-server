@@ -5,8 +5,6 @@ import type { CompiledStateGraph, StateSnapshot } from "@langchain/langgraph";
  */
 export type TGraphDef<
   TState extends TAnnotation,
-  TInput extends TAnnotation,
-  TOutput extends TAnnotation,
   TConfig extends TAnnotation,
 > = {
   name: string;
@@ -16,12 +14,14 @@ export type TGraphDef<
 
   // schemas
   state_annotation: TState;
-  input_annotation: TInput;
-  output_annotation: TOutput;
   config_annotation: TConfig;
 
+  // input / output keys -- will default to all. Mainly used for documentation / client type generation
+  input_keys?: Array<keyof TState["State"]>;
+  output_keys?: Array<keyof TState["State"]>;
+
   // defaults
-  default_state?: TInput["State"];
+  default_state?: TState["State"];
   default_config?: TConfig["State"];
 
   // launch assistants (other assisitatnts to add to graph manager on init)
