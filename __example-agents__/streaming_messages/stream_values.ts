@@ -3,7 +3,7 @@ import { graph } from "./graph.js";
 const input = {
   messages: {
     role: "user",
-    content: "What is the current stock price of $AAPL?",
+    content: "Tell me about who you are",
   },
 };
 
@@ -17,5 +17,5 @@ const config = {
 const stream = await graph.stream(input, config);
 
 for await (const [event, data] of stream) {
-  // console.log("Evernt : ", event);
+  console.log("Evernt : ", event, data);
 }

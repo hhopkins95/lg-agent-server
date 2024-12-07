@@ -30,11 +30,11 @@ const GraphStateAnnotation = Annotation.Root({
 const callModel = async (state: typeof GraphStateAnnotation.State) => {
   const { messages } = state;
 
-  const llm = getLLM("claude3_5");
+  const llm = getLLM("llama3_1__70b");
 
   console.log("------------ start ------------");
   const result = await llm.invoke(messages, { tags: ["MESSAGES"] });
-  const result2 = await llm.invoke(messages, { tags: ["MESSAGES__2"] });
+  // const result2 = await llm.invoke(messages, { tags: ["MESSAGES__2"] });
   console.log("------------ end ------------");
 
   return { messages: [result], count: Math.random() };
