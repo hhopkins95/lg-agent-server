@@ -1,11 +1,10 @@
 import { MemorySaver } from "@langchain/langgraph";
-import { graph } from "./graph.js";
+import { graph, GraphStateAnnotation } from "./graph.js";
 
-const input = {
-  messages: {
-    role: "user",
-    content: "What is the current stock price of $AAPL?",
-  },
+const input: typeof GraphStateAnnotation.State = {
+  messages: [],
+  count: 0,
+  messages2: [],
 };
 
 const config = {
@@ -18,12 +17,15 @@ const config = {
 graph.checkpointer = new MemorySaver();
 const stream = graph.streamEvents(input, {
   ...config,
-  streamMode: "updates",
+  // streamMode: [],
+  streamMode: ["messages"],
+  // streamMode: ["values", "messages"],
 });
 
 for await (const event of stream) {
-  console.log(event.event);
-
+  if (event.event == "on_chain_stream") {
+    console.log(event.tags);
+  }
   if (event.event == "on_chat_model_stream" && false) {
     console.dir(
       {

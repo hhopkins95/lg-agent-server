@@ -1,9 +1,11 @@
 import { getLLM } from "@/lib/models/loadLLM";
-import { NamedMessageAnnotation } from "@/lib/states/named-messages";
+import { MessagesAnnotation } from "@/lib/states/messages";
+import { BaseMessage } from "@langchain/core/messages";
 import {
   Annotation,
   END,
-  MessagesAnnotation,
+  // MessagesAnnotation,
+  messagesStateReducer,
   START,
   StateGraph,
 } from "@langchain/langgraph";
@@ -21,20 +23,24 @@ import {
  * });
  * ```
  */
-const GraphStateAnnotation = Annotation.Root({
-  ...MessagesAnnotation.spec,
-  ...NamedMessageAnnotation("otherMessages").spec,
-  count: Annotation<number | null>, // example number property -- counts how many times the model has been called
+const foo = Annotation<BaseMessage[]>({
+  reducer: messagesStateReducer,
+});
+
+export const GraphStateAnnotation = Annotation.Root({
+  messages: MessagesAnnotation,
+  messages2: MessagesAnnotation,
+  count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
 const callModel = async (state: typeof GraphStateAnnotation.State) => {
-  const { messages } = state;
+  const { messages, messages2 } = state;
 
   const llm = getLLM("llama3_1__70b");
 
   console.log("------------ start ------------");
-  const result = await llm.invoke(messages, { tags: ["MESSAGES"] });
-  // const result2 = await llm.invoke(messages, { tags: ["MESSAGES__2"] });
+  const result = await llm.invoke(messages, { tags: ["messages"] });
+  const result2 = await llm.invoke(messages2, { tags: ["messages2"] });
   console.log("------------ end ------------");
 
   return { messages: [result], count: Math.random() };
