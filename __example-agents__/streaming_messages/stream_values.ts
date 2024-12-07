@@ -11,7 +11,7 @@ const config = {
   configurable: {
     thread_id: "stream_values",
   },
-  streamMode: ["values" as const],
+  streamMode: ["values" as const, "messages" as const],
 };
 
 const stream = await graph.stream(input, config);

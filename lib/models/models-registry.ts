@@ -28,7 +28,7 @@ export const OPEN_ROUTER_MODELS: Record<
     },
     gpt4mini: {
         source: "openrouter",
-        name: "openai/gpt-4o-mini-2024-07-18",
+        name: "openai/gpt-4o-mini",
         description: "GPT-4 Mini",
         supports_tools: true,
         context: 128,

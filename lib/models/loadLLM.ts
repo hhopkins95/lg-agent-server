@@ -45,12 +45,11 @@ export const getOllamaLLM = (modelName: string) => {
 };
 
 export const getOpenRouterLLM = (modelName: string) => {
-  console.log("pre - init");
   const model = new ChatOpenAI({
-    modelName,
-    // temperature: 0.8,
+    streamUsage: false,
+    modelName: modelName,
     streaming: true,
-    openAIApiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: process.env.OPENROUTER_API_KEY,
     logprobs: false,
   }, {
     basePath: "https://openrouter.ai/api/v1",
@@ -61,6 +60,23 @@ export const getOpenRouterLLM = (modelName: string) => {
     //     },
     // },
   });
+
   console.log("post - init");
   return model;
+};
+
+/**
+ * This is a hack to silence a console warning from LangChain.
+ *
+ * It doesn't like that the model name from openrouter.ai doesn't match the model name from OpenAI. -- shouldnt have any effect on operation
+ */
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  if (
+    !args[0]?.includes(
+      "Failed to calculate number of tokens, falling back to approximate count",
+    )
+  ) {
+    originalWarn.apply(console, args);
+  }
 };
