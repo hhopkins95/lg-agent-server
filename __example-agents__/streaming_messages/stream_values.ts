@@ -11,11 +11,11 @@ const config = {
   configurable: {
     thread_id: "stream_values",
   },
-  streamMode: "values" as const,
+  streamMode: ["values" as const],
 };
 
 const stream = await graph.stream(input, config);
 
-for await (const event of stream) {
-  console.log(event);
+for await (const [event, data] of stream) {
+  // console.log("Evernt : ", event);
 }

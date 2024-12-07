@@ -45,13 +45,15 @@ export const getOllamaLLM = (modelName: string) => {
 };
 
 export const getOpenRouterLLM = (modelName: string) => {
+  console.log("pre - init");
   const model = new ChatOpenAI({
     modelName,
     // temperature: 0.8,
     streaming: true,
     openAIApiKey: process.env.OPENROUTER_API_KEY,
+    logprobs: false,
   }, {
-    basePath: process.env.OPENROUTER_BASE_URL + "/api/v1",
+    basePath: "https://openrouter.ai/api/v1",
     // baseOptions: {
     //     headers: {
     //         "HTTP-Referer": "https://yourapp.com/", // Optional, for including your app on openrouter.ai rankings.
@@ -59,6 +61,6 @@ export const getOpenRouterLLM = (modelName: string) => {
     //     },
     // },
   });
-
+  console.log("post - init");
   return model;
 };

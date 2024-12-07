@@ -35,7 +35,7 @@ const defaultState: typeof GraphStateAnnotation.State = {
   messages: [],
 };
 
-// TOOLS
+/* TOOLS */
 const addNumbersTool = tool((input) => {
   console.log("Add numbers tool called with input", input);
   return input.a + input.b;
@@ -48,7 +48,7 @@ const addNumbersTool = tool((input) => {
   }),
 });
 
-// NODES
+/* NODES */
 const tools = [addNumbersTool];
 const toolNode = new ToolNode(tools);
 
@@ -84,7 +84,7 @@ const router = (state: typeof GraphStateAnnotation.State) => {
   return END;
 }; // Determines whether or not to call the tool node, or to end the graph after the 'callModel' node
 
-// GRAPH
+/* GRAPH */
 const workflow = new StateGraph(
   GraphStateAnnotation,
   GraphConfigurationAnnotation,

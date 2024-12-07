@@ -14,11 +14,12 @@ import { tool } from "@langchain/core/tools";
 import { type AllModelKeys } from "@/lib/models/models-registry";
 import { getLLM } from "@/lib/models/loadLLM";
 import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
-import { logEvent } from "utils.js";
+import { logStremEvent } from "@/lib/utils/log-stream-events";
+import { drawGraphPng } from "@/lib/utils/draw-graph-png";
 
 // CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
-  model: Annotation<AllModelKeys | null>(),
+  model: Annotation<AllModelKeys>(),
 });
 
 const defaultConfig: typeof GraphConfigurationAnnotation.State = {
@@ -114,10 +115,11 @@ export const graph = workflow.compile({
 });
 
 async function main() {
-  const config: LangGraphRunnableConfig<
-    typeof GraphConfigurationAnnotation.State
-  > = {
-    configurable: { thread_id: "refunder_dynamic", model: "claude3_5" },
+  const config = {
+    configurable: {
+      thread_id: "refunder_dynamic",
+      model: "claude3_5" as const,
+    },
     streamMode: "updates" as const,
   };
 
@@ -159,8 +161,10 @@ async function main() {
 
   // Continue the graph execution with updated state
   for await (const event of await graph.stream(null, config)) {
-    logEvent(event);
+    logStremEvent(event);
   }
 }
 
-main();
+// main();
+
+drawGraphPng(graph, "breakpoints.png");

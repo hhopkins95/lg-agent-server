@@ -1,3 +1,9 @@
+import { getLLM } from "@/lib/models/loadLLM";
+import { type AllModelKeys } from "@/lib/models/models-registry";
+import { drawGraphPng } from "@/lib/utils/draw-graph-png";
+import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
+import { type AIMessage } from "@langchain/core/messages";
+import { tool } from "@langchain/core/tools";
 import {
   Annotation,
   END,
@@ -7,16 +13,11 @@ import {
   START,
   StateGraph,
 } from "@langchain/langgraph";
-import { type AIMessage } from "@langchain/core/messages";
 import { z } from "zod";
-import { tool } from "@langchain/core/tools";
-import { type AllModelKeys } from "@/lib/models/models-registry";
-import { getLLM } from "@/lib/models/loadLLM";
-import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
 
 // CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
-  model: Annotation<AllModelKeys | null>(),
+  model: Annotation<AllModelKeys>(),
 });
 
 const defaultConfig: typeof GraphConfigurationAnnotation.State = {
@@ -110,10 +111,8 @@ export const graph = workflow.compile({
 });
 
 async function main() {
-  const config: LangGraphRunnableConfig<
-    typeof GraphConfigurationAnnotation.State
-  > = {
-    configurable: { thread_id: "refunder", model: "claude3_5" },
+  const config = {
+    configurable: { model: "claude3_5" as const, thread_id: "asdf" },
     streamMode: "updates" as const,
   };
   const input = {
@@ -125,7 +124,9 @@ async function main() {
     ],
   };
 
-  for await (const event of await graph.stream(input, config)) {
+  for await (
+    const event of await graph.stream(input, config)
+  ) {
     const key = Object.keys(event)[0];
     if (key) {
       console.log(`Event: ${key}\n`);
@@ -154,4 +155,4 @@ async function main() {
   }
 }
 
-main();
+// main();

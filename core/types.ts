@@ -1,5 +1,11 @@
-import type { TAnnotation } from "@/lib/utils/type-helpers";
-import type { CompiledStateGraph, StateSnapshot } from "@langchain/langgraph";
+import type {
+  Annotation,
+  CompiledStateGraph,
+  StateSnapshot,
+} from "@langchain/langgraph";
+
+export type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
+
 /**
  * Graph Def
  */
