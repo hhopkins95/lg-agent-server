@@ -1,5 +1,5 @@
 import { getLLM } from "@/lib/models/loadLLM";
-import { MessagesAnnotation } from "@/lib/states/messages";
+import { CustomMessagesAnnotation } from "@/lib/states/messages";
 import { BaseMessage } from "@langchain/core/messages";
 import {
   Annotation,
@@ -10,37 +10,40 @@ import {
   StateGraph,
 } from "@langchain/langgraph";
 
-/**
- * MessagesAnnotation is a pre-built state annotation imported from @langchain/langgraph.
- * It is the same as the following annotation:
- *
- * ```typescript
- * const MessagesAnnotation = Annotation.Root({
- *   messages: Annotation<BaseMessage[]>({
- *     reducer: messagesStateReducer,
- *     default: () => [systemMessage],
- *   }),
- * });
- * ```
- */
-const foo = Annotation<BaseMessage[]>({
-  reducer: messagesStateReducer,
-});
-
+// State
 export const GraphStateAnnotation = Annotation.Root({
-  messages: MessagesAnnotation,
-  messages2: MessagesAnnotation,
+  messages: CustomMessagesAnnotation,
+  messages2: CustomMessagesAnnotation,
   count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
+type StateKeys = keyof typeof GraphStateAnnotation.State;
+
+const StateLLMStreamKeys: Record<string, StateKeys> = {
+  messages: "messages",
+  messages2: "messages2",
+} as const; // LLM streams that are directly written to the state
+
+const OtherLLMStreamKeys = {
+  fooCall: "fooCall",
+} as const; // Other LLM calls that want to be streamed back to the client
+
+// Node
 const callModel = async (state: typeof GraphStateAnnotation.State) => {
   const { messages, messages2 } = state;
 
-  const llm = getLLM("llama3_1__70b");
+  const llm = getLLM("llama3_2__3b");
 
   console.log("------------ start ------------");
-  const result = await llm.invoke(messages, { tags: ["messages"] });
-  const result2 = await llm.invoke(messages2, { tags: ["messages2"] });
+  const result = await llm.invoke(messages, {
+    tags: [OtherLLMStreamKeys.fooCall],
+  });
+  const result2 = await llm.invoke(messages2, {
+    tags: [StateLLMStreamKeys.messages2],
+  });
+  const fooCall = await llm.invoke(messages, {
+    tags: [OtherLLMStreamKeys.fooCall],
+  });
   console.log("------------ end ------------");
 
   return { messages: [result], count: Math.random() };
@@ -51,8 +54,4 @@ const workflow = new StateGraph(GraphStateAnnotation)
   .addEdge(START, "agent")
   .addEdge("agent", END);
 
-export const graph = workflow.compile({
-  // The LangGraph Studio/Cloud API will automatically add a checkpointer
-  // only uncomment if running locally
-  // checkpointer: new MemorySaver(),
-});
+export const graph = workflow.compile();
