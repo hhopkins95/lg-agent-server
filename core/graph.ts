@@ -1,5 +1,4 @@
-import type { TAnnotation } from "@/lib/utils/type-helpers.ts";
-import type { TAssistant, TGraphDef, TThread } from "./types.ts";
+import type { TAnnotation, TAssistant, TGraphDef, TThread } from "./types.ts";
 import { AssistantManager } from "./assistant.ts";
 import { type DataStore } from "./storage/index.ts";
 import { ThreadManager } from "./thread.ts";
@@ -9,11 +8,9 @@ import { ThreadManager } from "./thread.ts";
  */
 export interface GraphManagerConfig<
   TState extends TAnnotation,
-  TInput extends TAnnotation,
-  TOutput extends TAnnotation,
   TConfig extends TAnnotation,
 > {
-  graphConfig: TGraphDef<TState, TInput, TOutput, TConfig>;
+  graphConfig: TGraphDef<TState, TConfig>;
   assistantStore: DataStore<TAssistant<TConfig>>;
   threadStore: DataStore<TThread<TState>>;
 }
@@ -22,26 +19,22 @@ export interface GraphManagerConfig<
  * Manages all aspects of a graph, including assistants, threads, and runs
  * Acts as the main entry point for graph-related operations
  * @template TState - The state type annotation
- * @template TInput - The input type annotation
- * @template TOutput - The output type annotation
  * @template TConfig - The config type annotation
  */
 export class GraphStateManager<
   TState extends TAnnotation,
-  TInput extends TAnnotation,
-  TOutput extends TAnnotation,
   TConfig extends TAnnotation,
 > {
   protected assistants: AssistantManager<TConfig>;
   protected threads: ThreadManager<TState>;
-  protected graphConfig: TGraphDef<TState, TInput, TOutput, TConfig>;
+  protected graphConfig: TGraphDef<TState, TConfig>;
 
   /**
    * Creates a new GraphManager
    * @param config - Configuration for the graph manager
    */
   constructor(
-    config: GraphManagerConfig<TState, TInput, TOutput, TConfig>,
+    config: GraphManagerConfig<TState, TConfig>,
   ) {
     this.graphConfig = config.graphConfig;
 
@@ -191,6 +184,7 @@ export class GraphStateManager<
    * @param state - Initial state for the thread
    * @param config - Configuration for the thread
    */
+
   async *streamGraph({
     assistantId,
     threadId,
@@ -235,7 +229,7 @@ export class GraphStateManager<
       configurable: {
         ...invokeConfig,
       },
-      streamMode: "values",
+      streamMode: ["values", "messages"],
     });
 
     let finalState: TState["State"] | undefined;

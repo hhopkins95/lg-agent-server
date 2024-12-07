@@ -19,10 +19,10 @@ export const GraphStateAnnotation = Annotation.Root({
 
 type StateKeys = keyof typeof GraphStateAnnotation.State;
 
-const StateLLMStreamKeys: Record<string, StateKeys> = {
+const StateLLMStreamKeys = {
   messages: "messages",
   messages2: "messages2",
-} as const; // LLM streams that are directly written to the state
+} as const satisfies Record<string, StateKeys>; // LLM streams that are directly written to the state
 
 const OtherLLMStreamKeys = {
   fooCall: "fooCall",
@@ -36,14 +36,14 @@ const callModel = async (state: typeof GraphStateAnnotation.State) => {
 
   console.log("------------ start ------------");
   const result = await llm.invoke(messages, {
-    tags: [OtherLLMStreamKeys.fooCall],
+    tags: [StateLLMStreamKeys.messages],
   });
-  const result2 = await llm.invoke(messages2, {
-    tags: [StateLLMStreamKeys.messages2],
-  });
-  const fooCall = await llm.invoke(messages, {
-    tags: [OtherLLMStreamKeys.fooCall],
-  });
+  // const result2 = await llm.invoke(messages2, {
+  //   tags: [StateLLMStreamKeys.messages2],
+  // });
+  // const fooCall = await llm.invoke(messages, {
+  //   tags: [OtherLLMStreamKeys.fooCall],
+  // });
   console.log("------------ end ------------");
 
   return { messages: [result], count: Math.random() };

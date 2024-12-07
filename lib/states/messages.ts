@@ -21,7 +21,7 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
  * @param key
  * @returns
  */
-export const MessagesAnnotation = Annotation<BaseMessage[]>({
+export const CustomMessagesAnnotation = Annotation<BaseMessage[]>({
     reducer: messagesStateReducer,
     // default: () => [SystemMessage],
 });

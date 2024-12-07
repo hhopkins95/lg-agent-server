@@ -1,4 +1,8 @@
 import type {
+  AIMessageChunk,
+  ToolMessageChunk,
+} from "@langchain/core/messages";
+import type {
   Annotation,
   CompiledStateGraph,
   StateSnapshot,
@@ -29,6 +33,10 @@ export type TGraphDef<
   // defaults
   default_state?: TState["State"];
   default_config?: TConfig["State"];
+
+  // stream config
+  state_llm_stream_keys?: Record<string, keyof TState["State"]>; // llm streams that are directly written to the state
+  other_llm_stream_keys?: Record<string, string>; // other LLM calls that want to be streamed back to the client
 
   // launch assistants (other assisitatnts to add to graph manager on init)
   launch_assistants?: Array<TAssistant<TConfig>>;
@@ -65,3 +73,29 @@ export type TThread<TState extends TAnnotation> = {
 export type TThreadState<TState extends TAnnotation> = StateSnapshot & {
   values: TState["State"];
 }; // Current nodes, tasks, etc..
+
+/**
+Stream Response
+*/
+type LLMStreamChunk = {
+  chunk: AIMessageChunk | ToolMessageChunk;
+  meta?: {
+    tags?: string[];
+    name?: string;
+    langgraph_node?: string;
+    thread_id?: string;
+    langgraph_step?: number;
+  };
+};
+
+export type TStreamYield<TGraph extends TGraphDef<any, any>> = {
+  full_state_update?: TGraph["state_annotation"]["State"];
+  state_llm_stream_data?: {
+    [key in keyof TGraph["state_llm_stream_keys"]]: LLMStreamChunk;
+  };
+  other_llm_stream_data?: {
+    [key in keyof TGraph["other_llm_stream_keys"]]: LLMStreamChunk;
+  };
+};
+
+// let foo : AIMessageChunk
