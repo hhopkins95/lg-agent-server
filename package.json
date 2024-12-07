@@ -17,7 +17,7 @@
     "@hono/zod-openapi": "^0.18.3",
     "@langchain/community": "^0.3.17",
     "@langchain/core": "^0.3.20",
-    "@langchain/langgraph": "^0.2.24",
+    "@langchain/langgraph": "^0.2.27",
     "@langchain/ollama": "^0.1.2",
     "@langchain/openai": "^0.3.14",
     "@scalar/hono-api-reference": "^0.5.163",

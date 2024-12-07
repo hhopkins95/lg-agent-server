@@ -12,20 +12,16 @@
  * ```
  */
 
-import { type BaseMessage, SystemMessage } from "@langchain/core/messages";
+import { BaseMessage, SystemMessage } from "@langchain/core/messages";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
 /**
- * Messages annotation that mounts at a different key that 'messages'
+ * Messages annotation that allows messages to be mounted at a different key that 'messages'
  *
  * @param key
  * @returns
  */
-export const NamedMessageAnnotation = (key: string) => {
-    return Annotation.Root({
-        [key]: Annotation<BaseMessage[]>({
-            reducer: messagesStateReducer,
-            default: () => [],
-        }),
-    });
-};
+export const MessagesAnnotation = Annotation<BaseMessage[]>({
+    reducer: messagesStateReducer,
+    // default: () => [SystemMessage],
+});
