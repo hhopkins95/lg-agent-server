@@ -6,9 +6,7 @@ import type {
   TStreamYield,
   TThread,
 } from "./types.ts";
-import { AssistantManager } from "./assistant.ts";
-import { type DataStore } from "./storage/index.ts";
-import { ThreadManager } from "./thread.ts";
+import type { DataStore, DataStoreFilter } from "./storage/index.ts";
 import type {
   AIMessageChunk,
   ToolMessageChunk,
@@ -40,8 +38,8 @@ export function CreateGraphDef<
  * @template TGraph - The graph definition
  */
 export class GraphStateManager<TGraph extends TGraphDef> {
-  protected assistants: AssistantManager<TGraph["config_annotation"]>;
-  protected threads: ThreadManager<TGraph["state_annotation"]>;
+  protected assistantStore: DataStore<TAssistant<TGraph["config_annotation"]>>;
+  protected threadStore: DataStore<TThread<TGraph["state_annotation"]>>;
   protected graphConfig: TGraph;
 
   /**
@@ -56,80 +54,155 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     threadStore: DataStore<TThread<TGraph["state_annotation"]>>,
   ) {
     this.graphConfig = graphConfig;
-
-    // Initialize managers with their respective stores
-    this.assistants = new AssistantManager(
-      this.graphConfig,
-      assistantStore,
-    );
-
-    this.threads = new ThreadManager(
-      threadStore,
-    );
+    this.assistantStore = assistantStore;
+    this.threadStore = threadStore;
   }
 
   /**
    * Initializes all managers
    */
   async initialize(): Promise<void> {
-    await Promise.all([
-      this.assistants.initialize(),
-    ]);
+    // Initialize stores
+    this.assistantStore.initialize && await this.assistantStore.initialize();
+    this.threadStore.initialize && await this.threadStore.initialize();
+
+    // Load default assistants
+    await this.loadAssistantsFromConfig();
   }
 
-  /**
-   * Gets the assistant manager
-   */
-  getAssistantManager(): AssistantManager<TGraph["config_annotation"]> {
-    return this.assistants;
+  protected async loadAssistantsFromConfig() {
+    const should_upsert = false; // TODO -- pass this in through config
+    const all_assistants: TAssistant<TGraph["config_annotation"]>[] = [];
+
+    if (this.graphConfig.default_config) {
+      const config = this.graphConfig.default_config;
+      all_assistants.push({
+        id: "__DEFAULT__",
+        graph_name: this.graphConfig.name,
+        description: `Default configuration for ${this.graphConfig.name}`,
+        config,
+      });
+    }
+
+    if (this.graphConfig.launch_assistants) {
+      all_assistants.push(...this.graphConfig.launch_assistants);
+    }
+
+    for (const assistant of all_assistants) {
+      const existing = await this.assistantStore.get(assistant.id);
+      if (!existing) {
+        await this.createAssistant(assistant);
+        continue;
+      }
+      if (should_upsert) {
+        await this.updateAssistant(assistant.id, assistant);
+      }
+    }
   }
 
-  /**
-   * Gets the thread manager
-   */
-  getThreadManager(): ThreadManager<TGraph["state_annotation"]> {
-    return this.threads;
+  // Assistant Management Methods
+  async getAssistant(
+    id: string,
+  ): Promise<TAssistant<TGraph["config_annotation"]> | undefined> {
+    return await this.assistantStore.get(id);
   }
 
-  /**
-   * Gets all assistants for this graph
-   */
-  async getAssistants(): Promise<TAssistant<TGraph["config_annotation"]>[]> {
-    return await this.assistants.listAllAssistants();
+  async getDefaultAssistant(): Promise<
+    TAssistant<TGraph["config_annotation"]> | undefined
+  > {
+    return await this.assistantStore.get("__DEFAULT__");
   }
 
-  /**
-   * Gets all threads for this graph
-   */
-  async getThreads(): Promise<TThread<TGraph["state_annotation"]>[]> {
-    return await this.threads.listAllThreads();
+  async listAllAssistants(): Promise<
+    TAssistant<TGraph["config_annotation"]>[]
+  > {
+    return await this.assistantStore.list();
   }
 
-  /**
-   * Creates a new assistant
-   * @param config - Configuration for the assistant
-   */
   async createAssistant(
-    config: Omit<TAssistant<TGraph["config_annotation"]>, "id">,
+    assistant: Omit<TAssistant<TGraph["config_annotation"]>, "id"> & {
+      id?: string;
+    },
   ): Promise<TAssistant<TGraph["config_annotation"]>> {
-    return await this.assistants.createAssistant({
-      id: `assistant_${crypto.randomUUID()}`,
-      ...config,
+    const assistantWithId = {
+      id: assistant.id ?? `assistant_${crypto.randomUUID()}`,
+      ...assistant,
+    };
+    return this.assistantStore.create(assistantWithId);
+  }
+
+  async updateAssistant(
+    id: string,
+    updates: Partial<TAssistant<TGraph["config_annotation"]>>,
+  ): Promise<TAssistant<TGraph["config_annotation"]> | undefined> {
+    const existing = await this.getAssistant(id);
+    if (!existing) return undefined;
+    return this.assistantStore.update(id, { ...existing, ...updates });
+  }
+
+  // Thread Management Methods
+  async listAllThreads(): Promise<TThread<TGraph["state_annotation"]>[]> {
+    return await this.threadStore.list();
+  }
+
+  async listThreadsByAssistant(
+    assistantId: string,
+  ): Promise<TThread<TGraph["state_annotation"]>[]> {
+    return await this.threadStore.query({
+      assistant_id: { $eq: assistantId },
+    } as DataStoreFilter<TThread<TGraph["state_annotation"]>>);
+  }
+
+  async createThread(
+    data?: Partial<TThread<TGraph["state_annotation"]>>,
+  ): Promise<TThread<TGraph["state_annotation"]>> {
+    return await this.threadStore.create({
+      id: `thread_${crypto.randomUUID()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      status: "idle",
+      ...data,
     });
   }
 
-  /**
-   * Creates a new thread
-   * @param config - Configuration for the thread
-   */
-  async createThread(
-    config?: Partial<TThread<TGraph["state_annotation"]>>,
-  ): Promise<TThread<TGraph["state_annotation"]>> {
-    return this.threads.createThread({
-      // id: `thread_${crypto.randomUUID()}`,
-      // created_at: new Date(),
-      // ...config,
-    });
+  async getThread(
+    threadId: string,
+  ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
+    return await this.threadStore.get(threadId);
+  }
+
+  async updateThread(
+    threadId: string,
+    updates: Partial<TThread<TGraph["state_annotation"]>>,
+  ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
+    const existing = await this.getThread(threadId);
+    if (!existing) return undefined;
+
+    const updated: Partial<TThread<TGraph["state_annotation"]>> = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    return this.threadStore.update(threadId, updated);
+  }
+
+  async getThreadState(
+    threadId: string,
+  ): Promise<TGraph["state_annotation"]["State"] | undefined> {
+    const thread = await this.getThread(threadId);
+    if (!thread) return undefined;
+    return thread.values;
+  }
+
+  async saveThreadState(
+    threadId: string,
+    state: TGraph["state_annotation"]["State"],
+  ): Promise<void> {
+    await this.threadStore.update(threadId, {
+      values: state,
+      updated_at: new Date().toISOString(),
+    } as Partial<TThread<TGraph["state_annotation"]>>);
   }
 
   /**
@@ -157,9 +230,9 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     // Get the assistant that will be used on this run
     let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
     if (!assistantId) {
-      assistant = await this.assistants.getDefaultAssistant();
+      assistant = await this.getDefaultAssistant();
     } else {
-      assistant = await this.assistants.get(assistantId);
+      assistant = await this.getAssistant(assistantId);
     }
     if (!assistant) {
       throw new Error(`Assistant ${assistantId} not found`);
@@ -168,7 +241,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     // Get the thread that will be used on this run
     let thread: TThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
-      thread = await this.threads.get(threadId);
+      thread = await this.getThread(threadId);
     }
     if (shouldCreateThread && !thread) {
       thread = await this.createThread();
@@ -188,7 +261,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     });
 
     if (thread) {
-      await this.threads.saveThreadState(thread.id, res);
+      await this.saveThreadState(thread.id, res);
     }
 
     return res;
@@ -222,9 +295,9 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     // Get the assistant that will be used on this run
     let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
     if (!assistantId) {
-      assistant = await this.assistants.getDefaultAssistant();
+      assistant = await this.getDefaultAssistant();
     } else {
-      assistant = await this.assistants.get(assistantId);
+      assistant = await this.getAssistant(assistantId);
     }
     if (!assistant) {
       throw new Error(`Assistant ${assistantId} not found`);
@@ -233,7 +306,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     // Get the thread that will be used on this run
     let thread: TThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
-      thread = await this.threads.get(threadId);
+      thread = await this.getThread(threadId);
     }
     if (shouldCreateThread && !thread) {
       thread = await this.createThread();
@@ -328,7 +401,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
     // Save the final state to the thread
     if (thread && finalState) {
-      await this.threads.saveThreadState(thread.id, finalState);
+      await this.saveThreadState(thread.id, finalState);
     }
   }
 }

@@ -56,7 +56,7 @@ export type TAssistant<TConfig extends TAnnotation> = {
   graph_name: string;
   description?: string;
   metadata?: Record<string, unknown>;
-  config: TConfig;
+  config: TConfig["State"];
 };
 
 /**
