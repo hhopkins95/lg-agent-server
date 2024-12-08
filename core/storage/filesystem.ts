@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { CheckpointStore, DataStore, DataStoreFilter } from "./types.ts";
+import type { CheckpointStore, DataStore, DataStoreFilter } from "./types.ts";
 
 /**
  * File system implementation of the DataStore interface

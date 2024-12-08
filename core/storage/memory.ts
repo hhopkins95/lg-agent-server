@@ -1,4 +1,4 @@
-import { DataStore, DataStoreFilter } from "./types.ts";
+import type { DataStore, DataStoreFilter } from "./types.ts";
 
 /**
  * In-memory implementation of the DataStore interface
