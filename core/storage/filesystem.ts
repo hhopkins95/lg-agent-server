@@ -163,6 +163,18 @@ export class FileSystemStore<T extends { id: string }>
   }
 
   /**
+   * Clears all items from the store by removing all files in the data directory
+   */
+  async clear(): Promise<void> {
+    try {
+      await fs.rm(this.dataDir, { recursive: true, force: true });
+      await fs.mkdir(this.dataDir, { recursive: true });
+    } catch (error) {
+      throw new Error(`Failed to clear store: ${error}`);
+    }
+  }
+
+  /**
    * Gets the file path for an item
    * @private
    */

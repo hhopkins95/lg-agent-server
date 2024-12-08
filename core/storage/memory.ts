@@ -157,4 +157,11 @@ export class InMemoryStore<T extends { id: string }> implements DataStore<T> {
 
     return true;
   }
+
+  /**
+   * Clears all items from the store
+   */
+  async clear(): Promise<void> {
+    this.items.clear();
+  }
 }

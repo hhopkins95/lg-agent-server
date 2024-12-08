@@ -82,6 +82,12 @@ export interface DataStore<T extends { id: string }> {
    * Called when the store is first created
    */
   initialize?(): Promise<void>;
+
+  /**
+   * Clears all items from the store
+   * @returns A promise that resolves when all items have been cleared
+   */
+  clear(): Promise<void>;
 }
 
 /**
