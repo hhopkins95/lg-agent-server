@@ -35,19 +35,9 @@ export function CreateGraphDef<
 }
 
 /**
- * Configuration for creating a GraphManager
- */
-export interface GraphManagerConfig<TGraph extends TGraphDef = TGraphDef> {
-  graphConfig: TGraph;
-  assistantStore: DataStore<TAssistant<TGraph["config_annotation"]>>;
-  threadStore: DataStore<TThread<TGraph["state_annotation"]>>;
-}
-
-/**
  * Manages all aspects of a graph, including assistants, threads, and runs
  * Acts as the main entry point for graph-related operations
- * @template TStateAnnotation - The state type annotation
- * @template TConfigAnnotation - The config type annotation
+ * @template TGraph - The graph definition
  */
 export class GraphStateManager<TGraph extends TGraphDef> {
   protected assistants: AssistantManager<TGraph["config_annotation"]>;
@@ -56,21 +46,25 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
   /**
    * Creates a new GraphManager
-   * @param config - Configuration for the graph manager
+   * @param graphConfig - The graph configuration. Create using 'CreateGraphDef'
+   * @param assistantStore - The storage for the assistant
+   * @param threadStore - The storage for the threads
    */
   constructor(
-    config: GraphManagerConfig<TGraph>,
+    graphConfig: TGraph,
+    assistantStore: DataStore<TAssistant<TGraph["config_annotation"]>>,
+    threadStore: DataStore<TThread<TGraph["state_annotation"]>>,
   ) {
-    this.graphConfig = config.graphConfig;
+    this.graphConfig = graphConfig;
 
     // Initialize managers with their respective stores
     this.assistants = new AssistantManager(
       this.graphConfig,
-      config.assistantStore,
+      assistantStore,
     );
 
     this.threads = new ThreadManager(
-      config.threadStore,
+      threadStore,
     );
   }
 
