@@ -13,19 +13,6 @@ import { graph, graph_data } from "@/__example-agents__/reAct/graph.ts";
 import { InMemoryStore } from "../storage/memory.ts";
 
 describe("GraphManager", () => {
-  const testGraphDefinition = CreateGraphDef({
-    graph,
-    name: "test_graph",
-    config_annotation: graph_data.GraphConfigurationAnnotation,
-    state_annotation: graph_data.GraphStateAnnotation,
-    default_config: graph_data.defaultConfig,
-    default_state: graph_data.defaultState,
-    input_keys: graph_data.inputKeys,
-    output_keys: graph_data.outputKeys,
-    state_llm_stream_keys: graph_data.streamStateKeys,
-    other_llm_stream_keys: graph_data.otherStreamKeys,
-  });
-
   let manager: GraphStateManager<typeof testGraphDefinition>;
 
   beforeEach(async () => {
