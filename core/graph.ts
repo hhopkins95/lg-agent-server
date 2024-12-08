@@ -14,7 +14,9 @@ import type {
   ToolMessageChunk,
 } from "@langchain/core/messages";
 
-// Applies type constraints when creating a graph definitiaon
+/**
+ *  Applies type constraints when creating a graph definitiaon
+ */
 export function CreateGraphDef<
   TStateAnnotation extends TAnnotation,
   TConfigAnnotation extends TAnnotation,
@@ -35,10 +37,10 @@ export function CreateGraphDef<
 /**
  * Configuration for creating a GraphManager
  */
-export interface GraphManagerConfig {
-  graphConfig: TGraphDef<tstateannotation, tconfigannotation>;
-  assistantStore: DataStore<TAssistant<TConfigAnnotation>>;
-  threadStore: DataStore<TThread<TStateAnnotation>>;
+export interface GraphManagerConfig<TGraph extends TGraphDef = TGraphDef> {
+  graphConfig: TGraph;
+  assistantStore: DataStore<TAssistant<TGraph["config_annotation"]>>;
+  threadStore: DataStore<TThread<TGraph["state_annotation"]>>;
 }
 
 /**
@@ -47,20 +49,17 @@ export interface GraphManagerConfig {
  * @template TStateAnnotation - The state type annotation
  * @template TConfigAnnotation - The config type annotation
  */
-export class GraphStateManager<
-  TStateAnnotation extends TAnnotation,
-  TConfigAnnotation extends TAnnotation,
-> {
-  protected assistants: AssistantManager<TConfigAnnotation>;
-  protected threads: ThreadManager<TStateAnnotation>;
-  protected graphConfig: TGraphDef<TStateAnnotation, TConfigAnnotation>;
+export class GraphStateManager<TGraph extends TGraphDef> {
+  protected assistants: AssistantManager<TGraph["config_annotation"]>;
+  protected threads: ThreadManager<TGraph["state_annotation"]>;
+  protected graphConfig: TGraph;
 
   /**
    * Creates a new GraphManager
    * @param config - Configuration for the graph manager
    */
   constructor(
-    config: GraphManagerConfig<TStateAnnotation, TConfigAnnotation>,
+    config: GraphManagerConfig<TGraph>,
   ) {
     this.graphConfig = config.graphConfig;
 
@@ -87,28 +86,28 @@ export class GraphStateManager<
   /**
    * Gets the assistant manager
    */
-  getAssistantManager(): AssistantManager<TConfigAnnotation> {
+  getAssistantManager(): AssistantManager<TGraph["config_annotation"]> {
     return this.assistants;
   }
 
   /**
    * Gets the thread manager
    */
-  getThreadManager(): ThreadManager<TStateAnnotation> {
+  getThreadManager(): ThreadManager<TGraph["state_annotation"]> {
     return this.threads;
   }
 
   /**
    * Gets all assistants for this graph
    */
-  async getAssistants(): Promise<TAssistant<TConfigAnnotation>[]> {
+  async getAssistants(): Promise<TAssistant<TGraph["config_annotation"]>[]> {
     return await this.assistants.listAllAssistants();
   }
 
   /**
    * Gets all threads for this graph
    */
-  async getThreads(): Promise<TThread<TStateAnnotation>[]> {
+  async getThreads(): Promise<TThread<TGraph["state_annotation"]>[]> {
     return await this.threads.listAllThreads();
   }
 
@@ -117,8 +116,8 @@ export class GraphStateManager<
    * @param config - Configuration for the assistant
    */
   async createAssistant(
-    config: Omit<TAssistant<TConfigAnnotation>, "id">,
-  ): Promise<TAssistant<TConfigAnnotation>> {
+    config: Omit<TAssistant<TGraph["config_annotation"]>, "id">,
+  ): Promise<TAssistant<TGraph["config_annotation"]>> {
     return await this.assistants.createAssistant({
       id: `assistant_${crypto.randomUUID()}`,
       ...config,
@@ -130,8 +129,8 @@ export class GraphStateManager<
    * @param config - Configuration for the thread
    */
   async createThread(
-    config?: Partial<TThread<TStateAnnotation>>,
-  ): Promise<TThread<TStateAnnotation>> {
+    config?: Partial<TThread<TGraph["state_annotation"]>>,
+  ): Promise<TThread<TGraph["state_annotation"]>> {
     return this.threads.createThread({
       // id: `thread_${crypto.randomUUID()}`,
       // created_at: new Date(),
@@ -158,11 +157,11 @@ export class GraphStateManager<
     assistantId?: string;
     threadId?: string;
     shouldCreateThread?: boolean;
-    state?: TStateAnnotation["State"];
-    config?: TConfigAnnotation["State"];
-  }): Promise<TStateAnnotation["State"]> {
+    state?: TGraph["state_annotation"]["State"];
+    config?: TGraph["config_annotation"]["State"];
+  }): Promise<TGraph["state_annotation"]["State"]> {
     // Get the assistant that will be used on this run
-    let assistant: TAssistant<TConfigAnnotation> | undefined;
+    let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
     if (!assistantId) {
       assistant = await this.assistants.getDefaultAssistant();
     } else {
@@ -173,7 +172,7 @@ export class GraphStateManager<
     }
 
     // Get the thread that will be used on this run
-    let thread: TThread<TStateAnnotation> | undefined;
+    let thread: TThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
       thread = await this.threads.get(threadId);
     }
@@ -221,13 +220,13 @@ export class GraphStateManager<
     assistantId?: string;
     threadId?: string;
     shouldCreateThread?: boolean;
-    state?: TStateAnnotation["State"];
-    config?: TConfigAnnotation["State"];
+    state?: TGraph["state_annotation"]["State"];
+    config?: TGraph["config_annotation"]["State"];
   }): AsyncGenerator<
-    TStreamYield<TGraphDef<TStateAnnotation, TConfigAnnotation>>
+    TStreamYield<TGraph>
   > {
     // Get the assistant that will be used on this run
-    let assistant: TAssistant<TConfigAnnotation> | undefined;
+    let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
     if (!assistantId) {
       assistant = await this.assistants.getDefaultAssistant();
     } else {
@@ -238,7 +237,7 @@ export class GraphStateManager<
     }
 
     // Get the thread that will be used on this run
-    let thread: TThread<TStateAnnotation> | undefined;
+    let thread: TThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
       thread = await this.threads.get(threadId);
     }
@@ -260,11 +259,11 @@ export class GraphStateManager<
       streamMode: ["values", "messages"],
     });
 
-    let finalState: TStateAnnotation["State"] | undefined;
+    let finalState: TGraph["state_annotation"]["State"] | undefined;
 
     // Helper to check if the meta tags of the chunk match any of the stream keys. If yes, returns the state key
     const getStreamKeyFromMetaTags = <T>(
-      keys: Record<string, any>, // T[] | undefined,
+      keys: T[] | undefined,
       tags: string[] | undefined,
     ): T | undefined => {
       if (!keys) return undefined;
@@ -282,7 +281,7 @@ export class GraphStateManager<
     for await (const [eventType, data] of stream) {
       // full state update event
       if (eventType == "values") {
-        let _data = data as TStateAnnotation["State"];
+        let _data = data as TGraph["state_annotation"]["State"];
         finalState = _data;
         // console.log("State Update : ", _data);
         yield {
@@ -296,17 +295,37 @@ export class GraphStateManager<
           AIMessageChunk | ToolMessageChunk,
           LLMStreamMeta,
         ];
-        const state_stream_keys = this.graphConfig.state_llm_stream_keys;
 
+        // Check if the streamed tags match any of the state stream keys
+        const state_stream_keys = this.graphConfig.state_llm_stream_keys;
         const state_key = getStreamKeyFromMetaTags(
           state_stream_keys,
           meta.tags,
         );
-        if (key) {
+        if (state_key) {
           yield {
             state_llm_stream_data: {
-              key,
+              // @ts-ignore
+              key: state_key,
               value: chunk,
+              meta,
+            },
+          };
+        }
+
+        // Check if the streamed tags match any of the other stream keys
+        const other_stream_keys = this.graphConfig.other_llm_stream_keys;
+        const other_key = getStreamKeyFromMetaTags(
+          other_stream_keys,
+          meta.tags,
+        );
+        if (other_key) {
+          yield {
+            other_llm_stream_data: {
+              // @ts-ignore
+              key: other_key,
+              value: chunk,
+              meta,
             },
           };
         }

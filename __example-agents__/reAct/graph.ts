@@ -93,7 +93,7 @@ const workflow = new StateGraph(
   .addNode("callModel", callModel)
   .addNode("tools", toolNode)
   // edges
-  .addEdge(START, "callModel")
+  .addEdge("__start__", "callModel")
   .addEdge("tools", "callModel")
   // conditional edges (routers)
   .addConditionalEdges(

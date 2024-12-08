@@ -1,13 +1,12 @@
 import type { DataStoreFilter } from "./storage/types.ts";
-import type { TGraphDef, TThread, TThreadState } from "./types.ts";
+import type { TAnnotation, TGraphDef, TThread, TThreadState } from "./types.ts";
 import type { DataStore } from "./storage/index.ts";
-import type { TAnnotation } from "@/lib/utils/type-helpers.ts";
 
 /**
  * Manages threads for a specific graph type
  * @template T - The specific graph type being managed
  */
-export class ThreadManager<TState extends TAnnotation> {
+export class ThreadManager<TState extends TAnnotation = TAnnotation> {
   /**
    * Creates a new ThreadManager
    * @param store - The storage implementation to use

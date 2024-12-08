@@ -1,19 +1,19 @@
-import type { TAnnotation } from "@/lib/utils/type-helpers.ts";
 import type { TAssistant, TGraphDef } from "./types.ts";
 import type { DataStore } from "./storage/index.ts";
+import type { TAnnotation } from "./types.ts";
 
 /**
  * Manages assistants for a specific graph type
  * @template TConfig - The configuration type annotation
  */
-export class AssistantManager<TConfig extends TAnnotation> {
+export class AssistantManager<TConfig extends TAnnotation = TAnnotation> {
   /**
    * Creates a new AssistantManager
    * @param graphConfig - The graph this manager is associated with
    * @param store - The storage implementation to use
    */
   constructor(
-    protected graphConfig: TGraphDef<any, any, any, TConfig>,
+    protected graphConfig: TGraphDef<any, TConfig, any, any>,
     protected store: DataStore<TAssistant<TConfig>>,
   ) {
   }
