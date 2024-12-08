@@ -8,15 +8,38 @@ import {
   it,
 } from "bun:test";
 import { CreateGraphDef, GraphStateManager } from "../graph.ts";
-import type { TGraphDef } from "../types.ts";
-import * as test_graph from "@/__example-agents__/reAct/graph.ts";
+import type { TAssistant, TGraphDef, TThread } from "../types.ts";
+import { graph, graph_data } from "@/__example-agents__/reAct/graph.ts";
+import { InMemoryStore } from "../storage/memory.ts";
 
 describe("GraphManager", () => {
-  let manager: TGraphDef;
-  const graphDeg = CreateGraphDef({});
+  const testGraphDefinition = CreateGraphDef({
+    graph,
+    name: "test_graph",
+    config_annotation: graph_data.GraphConfigurationAnnotation,
+    state_annotation: graph_data.GraphStateAnnotation,
+    default_config: graph_data.defaultConfig,
+    default_state: graph_data.defaultState,
+    input_keys: graph_data.inputKeys,
+    output_keys: graph_data.outputKeys,
+    state_llm_stream_keys: graph_data.streamStateKeys,
+    other_llm_stream_keys: graph_data.otherStreamKeys,
+  });
+
+  let manager: GraphStateManager<typeof testGraphDefinition>;
 
   beforeEach(async () => {
-    const graphManager;
+    const assistantStore = new InMemoryStore<
+      TAssistant<typeof testGraphDefinition["config_annotation"]>
+    >();
+    const threadStore = new InMemoryStore<
+      TThread<typeof testGraphDefinition["state_annotation"]>
+    >();
+    manager = new GraphStateManager(
+      testGraphDefinition,
+      assistantStore,
+      threadStore,
+    );
   });
 
   afterEach(async () => {

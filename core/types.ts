@@ -38,7 +38,7 @@ export type TGraphDef<
   default_config?: TConfigAnnotation["State"];
 
   // stream config
-  state_llm_stream_keys: TStreamableStateKeys[]; // streamed llm calls that are directly written to the state
+  state_llm_stream_keys?: TStreamableStateKeys[]; // streamed llm calls that are directly written to the state
   other_llm_stream_keys?: TOtherStreamableKeys[]; // other llm calls that are streamed
 
   // launch assistants (other assisitatnts to add to graph manager on init)
