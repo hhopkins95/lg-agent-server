@@ -3,7 +3,6 @@ import {
   END,
   type LangGraphRunnableConfig,
   MessagesAnnotation,
-  START,
   StateGraph,
 } from "@langchain/langgraph";
 import { z } from "zod";
@@ -18,7 +17,7 @@ const GraphConfigurationAnnotation = Annotation.Root({
   model: Annotation<AllModelKeys>,
 });
 const defaultConfig: typeof GraphConfigurationAnnotation.State = {
-  model: "claude3_5",
+  model: "llama3_2__3b",
 };
 
 // STATE
@@ -27,8 +26,17 @@ const GraphStateAnnotation = Annotation.Root({
   count: Annotation<number | null>, // example number property -- counts how many times the model has been called
 });
 
-const inputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["count"]; // potentially used downstream for clients
-const outputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["count"]; // potentially used downstream for clients
+const inputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["messages"]; // potentially used downstream for clients
+const outputKeys: Array<keyof typeof GraphStateAnnotation.State> = [
+  "count",
+  "messages",
+]; // potentially used downstream for clients
+
+const streamStateKeys: Array<keyof typeof GraphStateAnnotation.State> = [
+  "messages",
+];
+
+const otherStreamKeys = ["abc"];
 
 const defaultState: typeof GraphStateAnnotation.State = {
   count: 0,
@@ -64,7 +72,9 @@ async function callModel(
   const curCount = state.count ?? 0;
   const messages = state.messages ?? [];
 
-  const res = await llm.invoke(messages);
+  const res = await llm.invoke(messages, {
+    tags: ["messages"],
+  });
 
   return {
     messages: res,
@@ -106,8 +116,14 @@ export const graph = workflow.compile({
   // checkpointer: new MemorySaver(),
 });
 
-// Export other things needed for the graph server
-export {
-  GraphConfigurationAnnotation as ConfigurationAnnotation,
+// Exports needed for graphManager
+export const graph_data = {
+  defaultConfig,
+  defaultState,
+  GraphConfigurationAnnotation,
   GraphStateAnnotation,
+  inputKeys,
+  otherStreamKeys,
+  outputKeys,
+  streamStateKeys,
 };

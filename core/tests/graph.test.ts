@@ -7,16 +7,16 @@ import {
   expect,
   it,
 } from "bun:test";
-import { testGraph } from "@/lib/utils/testing/getTestGraph.ts";
-import { GRAPH_REGISTRY } from "@/models/registry.ts";
-import { GraphStateManager } from "../graph.ts";
+import { CreateGraphDef, GraphStateManager } from "../graph.ts";
+import type { TGraphDef } from "../types.ts";
+import * as test_graph from "@/__example-agents__/reAct/graph.ts";
 
 describe("GraphManager", () => {
-  let manager: GraphStateManager<typeof testGraph>;
+  let manager: TGraphDef;
+  const graphDeg = CreateGraphDef({});
 
   beforeEach(async () => {
-    await GRAPH_REGISTRY.registerGraph(testGraph);
-    manager = GRAPH_REGISTRY.getManager(testGraph.graph_name);
+    const graphManager;
   });
 
   afterEach(async () => {

@@ -15,6 +15,8 @@ strategy :
   the current state of the thread. Future improvement could track all of the
   diffs between runs for better tracking
 
+- ^^ probably use a SQLlite checkpointer / mongo in prod
+
   in the file system storage I think we can title each file by it's name rather
   than id. -- easier to navigate
 
