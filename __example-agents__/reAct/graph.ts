@@ -23,7 +23,7 @@ const defaultConfig: typeof GraphConfigurationAnnotation.State = {
 // STATE
 const GraphStateAnnotation = Annotation.Root({
   ...MessagesAnnotation.spec,
-  count: Annotation<number | null>, // example number property -- counts how many times the model has been called
+  count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
 const inputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["messages"]; // potentially used downstream for clients
@@ -69,7 +69,10 @@ async function callModel(
   const c = ensureGraphConfiguration(runnableConfig, defaultConfig); // if c is not defined, create it with defaults
   const llm = getLLM(c.model).bindTools(tools);
 
-  const curCount = state.count ?? 0;
+  const curCount = state.count;
+  if (curCount === undefined || curCount === null) {
+    throw new Error("count is not found");
+  }
   const messages = state.messages ?? [];
 
   const res = await llm.invoke(messages, {

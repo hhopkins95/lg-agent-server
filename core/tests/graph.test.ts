@@ -13,10 +13,10 @@ describe("GraphStateManager", () => {
     TAssistant<typeof TestGraphDef["config_annotation"]>
   >;
   let threadStore: InMemoryStore<
-    TThread<typeof TestGraphDef["state_annotation"]>
+    TThread<typeof TestGraphDef["state_annotation"]> & { assistant_id?: string }
   >;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Initialize stores and graph manager
     assistantStore = new InMemoryStore();
     threadStore = new InMemoryStore();
@@ -25,6 +25,7 @@ describe("GraphStateManager", () => {
       assistantStore,
       threadStore,
     );
+    await graphManager.initialize();
   });
 
   afterEach(async () => {
@@ -37,20 +38,24 @@ describe("GraphStateManager", () => {
     it("should create an assistant", async () => {
       // Create assistant with test config
       const assistant = await graphManager.createAssistant({
-        assistant_name: "test assistant",
+        graph_name: TestGraphDef.name,
+        description: "test assistant",
         config: TestGraphDef.default_config!,
       });
       // Verify assistant was created with correct properties
       expect(assistant).toBeDefined();
-      expect(assistant.name).toBe("test assistant");
+      expect(assistant.graph_name).toBe(TestGraphDef.name);
+      expect(assistant.description).toBe("test assistant");
     });
 
     it("should create a thread", async () => {
-      // Create thread
+      // Create assistant first
       const assistant = await graphManager.createAssistant({
-        assistant_name: "test assistant",
-        config: TestGraphDef.default_config,
+        graph_name: TestGraphDef.name,
+        description: "test assistant",
+        config: TestGraphDef.default_config!,
       });
+      // Create thread associated with the assistant
       const thread = await graphManager.createThread({
         assistant_id: assistant.id,
       });
@@ -62,23 +67,28 @@ describe("GraphStateManager", () => {
     it("should get all assistants", async () => {
       // Create multiple assistants
       await graphManager.createAssistant({
-        assistant_name: "assistant1",
-        config: TestGraphDef.default_config,
+        graph_name: TestGraphDef.name,
+        description: "assistant1",
+        config: TestGraphDef.default_config!,
       });
-      await graphManager.createAssistant({
-        assistant_name: "assistant2",
-        config: TestGraphDef.default_config,
-      });
-      // Verify getAssistants returns correct list
-      const assistants = await graphManager.getAssistants();
-      expect(assistants.length).toBe(2);
+
+      // Verify listAllAssistants returns correct list
+      const assistants = await graphManager.listAllAssistants();
+      expect(assistants.length).toBe(2); // should be created assistant and default assistant
+    });
+
+    it("should get default assistant", async () => {
+      const defaultAssistant = await graphManager.getDefaultAssistant();
+      expect(defaultAssistant).toBeDefined();
+      expect(defaultAssistant?.id).toBe("__DEFAULT__");
     });
 
     it("should get all threads", async () => {
       // Create multiple threads
       const assistant = await graphManager.createAssistant({
-        assistant_name: "test assistant",
-        config: TestGraphDef.default_config,
+        graph_name: TestGraphDef.name,
+        description: "test assistant",
+        config: TestGraphDef.default_config!,
       });
       await graphManager.createThread({
         assistant_id: assistant.id,
@@ -86,21 +96,24 @@ describe("GraphStateManager", () => {
       await graphManager.createThread({
         assistant_id: assistant.id,
       });
-      // Verify getThreads returns correct list
-      const threads = await graphManager.getThreads();
+      // Verify listAllThreads returns correct list
+      const threads = await graphManager.listAllThreads();
       expect(threads.length).toBe(2);
     });
   });
 
   describe("graph execution", () => {
     let testAssistant: TAssistant<typeof TestGraphDef["config_annotation"]>;
-    let testThread: TThread<typeof TestGraphDef["state_annotation"]>;
+    let testThread: TThread<typeof TestGraphDef["state_annotation"]> & {
+      assistant_id?: string;
+    };
 
     beforeEach(async () => {
       // Create test assistant and thread for execution tests
       testAssistant = await graphManager.createAssistant({
-        assistant_name: "test assistant",
-        config: TestGraphDef.default_config,
+        graph_name: TestGraphDef.name,
+        description: "test assistant",
+        config: TestGraphDef.default_config!,
       });
       testThread = await graphManager.createThread({
         assistant_id: testAssistant.id,
@@ -110,7 +123,10 @@ describe("GraphStateManager", () => {
     it("should invoke graph with existing assistant and thread", async () => {
       // Test invokeGraph with existing assistant/thread
       const initialState = { messages: [], count: 0 };
-      const result = await graphManager.runGraph(testThread.id, initialState);
+      const result = await graphManager.invokeGraph({
+        threadId: testThread.id,
+        state: initialState,
+      });
       // Verify state updates correctly
       expect(result).toBeDefined();
       expect(result.count).toBe(1);
@@ -120,11 +136,11 @@ describe("GraphStateManager", () => {
     it("should invoke graph with new thread creation", async () => {
       // Test invokeGraph with shouldCreateThread=true
       const initialState = { messages: [], count: 0 };
-      const result = await graphManager.runGraph(
-        testThread.id,
-        initialState,
-        true,
-      );
+      const result = await graphManager.invokeGraph({
+        threadId: testThread.id,
+        state: initialState,
+        shouldCreateThread: true,
+      });
       // Verify new thread created and state updated
       expect(result).toBeDefined();
       expect(result.count).toBe(1);
@@ -134,7 +150,10 @@ describe("GraphStateManager", () => {
     it("should stream graph execution", async () => {
       // Test streamGraph
       const initialState = { messages: [], count: 0 };
-      const stream = graphManager.streamGraph(testThread.id, initialState);
+      const stream = graphManager.streamGraph({
+        threadId: testThread.id,
+        state: initialState,
+      });
       // Verify stream yields correct updates
       const updates = [];
       for await (const update of stream) {
@@ -145,29 +164,36 @@ describe("GraphStateManager", () => {
   });
 
   describe("error handling", () => {
-    it("should handle invalid assistant ID", async () => {
-      // Test behavior with non-existent assistant ID
-      await expect(graphManager.getAssistantManager().get("invalid-id")).rejects
-        .toThrow();
+    it("should handle invalid assistant ID when invoking graph", async () => {
+      // Trying to invoke graph with a non-existent assistant should throw
+      await expect(
+        graphManager.invokeGraph({ assistantId: "invalid-id" }),
+      ).rejects.toThrow();
     });
 
-    it("should handle invalid thread ID", async () => {
-      // Test behavior with non-existent thread ID
-      await expect(graphManager.getThreadManager().get("invalid-id")).rejects
-        .toThrow();
+    it("should return undefined for invalid thread ID", async () => {
+      // Getting a non-existent thread returns undefined
+      const thread = await graphManager.getThread("invalid-id");
+      expect(thread).toBeUndefined();
     });
 
     it("should handle invalid graph state", async () => {
       // Test behavior with invalid state input
+      const assistant = await graphManager.createAssistant({
+        graph_name: TestGraphDef.name,
+        description: "test",
+        config: TestGraphDef.default_config!,
+      });
       const thread = await graphManager.createThread({
-        assistant_id: (await graphManager.createAssistant({
-          assistant_name: "test",
-          config: TestGraphDef.default_config,
-        })).id,
+        assistant_id: assistant.id,
       });
       const invalidState = { invalid: "state" };
-      await expect(graphManager.runGraph(thread.id, invalidState as any))
-        .rejects.toThrow();
+      await expect(
+        graphManager.invokeGraph({
+          threadId: thread.id,
+          state: invalidState as any,
+        }),
+      ).rejects.toThrow();
     });
   });
 });

@@ -259,7 +259,6 @@ export class GraphStateManager<TGraph extends TGraphDef> {
         ...invokeConfig,
       },
     });
-
     if (thread) {
       await this.saveThreadState(thread.id, res);
     }
