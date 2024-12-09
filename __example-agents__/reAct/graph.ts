@@ -67,13 +67,14 @@ async function callModel(
   >,
 ): Promise<typeof GraphStateAnnotation.Update> {
   const c = ensureGraphConfiguration(runnableConfig, defaultConfig); // if c is not defined, create it with defaults
-  const llm = getLLM(c.model).bindTools(tools);
+  const llm = getLLM(c.model); // .bindTools(tools);
 
   const curCount = state.count;
   if (curCount === undefined || curCount === null) {
     throw new Error("count is not found");
   }
   const messages = state.messages ?? [];
+  console.log("Messages", messages);
 
   const res = await llm.invoke(messages, {
     tags: ["messages"],

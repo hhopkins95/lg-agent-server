@@ -383,10 +383,11 @@ export class GraphStateManager<TGraph extends TGraphDef> {
             state_llm_stream_data: {
               // @ts-ignore
               key: state_key,
-              value: chunk,
+              chunk,
               meta,
             },
           };
+          continue;
         }
 
         // Check if the streamed tags match any of the other stream keys
@@ -400,7 +401,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
             other_llm_stream_data: {
               // @ts-ignore
               key: other_key,
-              value: chunk,
+              chunk: chunk,
               meta,
             },
           };

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { GraphStateManager } from "../graph";
 
 import { GraphDefinition } from "@/__example-agents__/reAct/graph";
+import { HumanMessage } from "@langchain/core/messages";
 
 const TestGraphDef = GraphDefinition;
 
@@ -17,7 +18,6 @@ describe("GraphStateManager", () => {
   >;
 
   beforeEach(async () => {
-    console.log("Before each...");
     // Initialize stores and graph manager
     assistantStore = new InMemoryStore();
     threadStore = new InMemoryStore();
@@ -150,7 +150,10 @@ describe("GraphStateManager", () => {
 
     it("should stream graph execution", async () => {
       // Test streamGraph
-      const initialState = { messages: [], count: 0 };
+      const initialState = {
+        messages: [new HumanMessage("Hello, what is your name?")],
+        count: 0,
+      };
       const stream = graphManager.streamGraph({
         threadId: testThread.id,
         state: initialState,
@@ -160,6 +163,7 @@ describe("GraphStateManager", () => {
       for await (const update of stream) {
         updates.push(update);
       }
+
       expect(updates.length).toBeGreaterThan(0);
     });
   });
@@ -200,7 +204,18 @@ describe("GraphStateManager", () => {
 
   describe("memory", () => {
     it("should remember thread state", async () => {
-      const thread1 = await graphManager.createThread();
+      const thread = await graphManager.createThread();
+      const thread_state = await graphManager.getThreadState(thread.id);
+      expect(thread_state).toBeUndefined();
+
+      const initialState = { messages: [], count: 0 };
+      await graphManager.invokeGraph({
+        state: initialState,
+        threadId: thread.id,
+      });
+
+      const thread_state2 = await graphManager.getThreadState(thread.id);
+      expect(thread_state2).toBeDefined();
     });
   });
 });
