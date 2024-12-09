@@ -156,8 +156,18 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   async createThread(
     data?: Partial<TThread<TGraph["state_annotation"]>>,
   ): Promise<TThread<TGraph["state_annotation"]>> {
+    let assistant_id = data?.assistant_id;
+    if (!assistant_id) {
+      const defaultAssistant = await this.getDefaultAssistant();
+      if (!defaultAssistant) {
+        throw new Error("No default assistant found");
+      }
+      assistant_id = defaultAssistant.id;
+    }
+
     return await this.threadStore.create({
       id: `thread_${crypto.randomUUID()}`,
+      assistant_id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       status: "idle",

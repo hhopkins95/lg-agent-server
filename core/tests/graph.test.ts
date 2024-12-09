@@ -17,6 +17,7 @@ describe("GraphStateManager", () => {
   >;
 
   beforeEach(async () => {
+    console.log("Before each...");
     // Initialize stores and graph manager
     assistantStore = new InMemoryStore();
     threadStore = new InMemoryStore();
@@ -194,6 +195,12 @@ describe("GraphStateManager", () => {
           state: invalidState as any,
         }),
       ).rejects.toThrow();
+    });
+  });
+
+  describe("memory", () => {
+    it("should remember thread state", async () => {
+      const thread1 = await graphManager.createThread();
     });
   });
 });
