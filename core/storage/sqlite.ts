@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import type { TAnnotation, TAssistant, TThread } from "../types.ts";
-import type { AppStorage, ThreadFilter } from "./app-storage.ts";
+import type { AppStorage, ThreadFilter } from "./types.ts";
 
 /**
  * SQLite implementation of AppStorage

@@ -6,7 +6,7 @@ import type {
   TStreamYield,
   TThread,
 } from "./types.ts";
-import type { AppStorage } from "./storage/app-storage.ts";
+import type { AppStorage } from "./storage/types.ts";
 import type {
   AIMessageChunk,
   ToolMessageChunk,

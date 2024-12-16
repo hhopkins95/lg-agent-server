@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { TAnnotation, TAssistant, TThread } from "../types.ts";
-import type { AppStorage, ThreadFilter } from "./app-storage.ts";
+import type { AppStorage, ThreadFilter } from "./types.ts";
 
 /**
  * File system implementation of the AppStorage interface
