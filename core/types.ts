@@ -75,13 +75,18 @@ export type TSavedThread<TState extends TAnnotation> = {
 };
 
 export type TThreadState<TState extends TAnnotation = TAnnotation> =
-  & TSavedThread<TState>
-  & {
-    status: "idle" | "running" | "interrupted";
-    pending_interrupt?: TInterrupt;
-  }; // Current nodes, tasks, etc..
-
-let foo: TThreadState;
+  | TSavedThread<TState>
+    & {
+      status: "idle" | "running";
+    }
+  | {
+    status: "interrupted";
+    pending_interrupt: TInterrupt;
+  }
+  | {
+    status: "error";
+    error: string;
+  };
 
 /**
 Stream Response
