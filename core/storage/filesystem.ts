@@ -156,9 +156,7 @@ export class FileSystemAppStorage<
           ) {
             continue;
           }
-          if (filter.status !== undefined && thread.status !== filter.status) {
-            continue;
-          }
+
           if (
             filter.created_after !== undefined &&
             thread.created_at <= filter.created_after
