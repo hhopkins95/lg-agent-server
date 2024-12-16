@@ -15,6 +15,31 @@ import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 import { BaseCheckpointSaver } from "@langchain/langgraph";
 
 /**
+ * TODO :
+ *
+ * - update to use 2 persistence layers.
+ *
+ * 1. Checkpointer
+ *  - follows langgraph api def.
+ *  - used to retrieve / store full current state of a thread (and checkpoints), including interrupts
+ *
+ * 2. AppStorage
+ *  - storage for assistants, and [final] thread states (any time the graph reaches the __END__ node, we will update this)
+ *
+ * Reasoning :
+ * the checkpointer automatically tracks everything we need for runs / checkpoints, but no built in way to query threads / assistants. Only the thread_id can be used as a query param. We need our own storage to manage who has access to what threads, and a way to actually query them.
+ *
+ * Checkpointer will store the history for any given thread and interrupt values. Any time the state settles, it will be stored in the app storage. So, if the checkpointer ever goes down / switches, the app storage will have the latest state.
+ *
+ * Can still pass the same db to the checkpointer and the app storage, but we'll have seperate interfaces in case they are ever decoupled.
+ *
+ * ---
+ * Update getting thread state logic to first check the checkpointer, then the app storage.
+ *
+ * Update thread type to include status, which should now include any interrupted data (so it can be resumed).
+ */
+
+/**
  *  Applies type constraints when creating a graph definitiaon
  */
 export function CreateGraphDef<

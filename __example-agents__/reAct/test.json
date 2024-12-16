@@ -8,7 +8,7 @@
   ],
   "tasks": [
     {
-      "id": "64631565-5cfd-58ac-add6-1a847cb896cf",
+      "id": "5540c283-64e0-536c-990f-347f48ad9efa",
       "name": "callModel",
       "path": [
         "__pregel_pull",
@@ -16,11 +16,11 @@
       ],
       "interrupts": [
         {
-          "value": "What should the new count be",
+          "value": "What should the new count be??",
           "when": "during",
           "resumable": true,
           "ns": [
-            "callModel:64631565-5cfd-58ac-add6-1a847cb896cf"
+            "callModel:5540c283-64e0-536c-990f-347f48ad9efa"
           ]
         }
       ]
@@ -29,22 +29,22 @@
   "metadata": {
     "source": "loop",
     "writes": null,
-    "step": 0,
+    "step": 6,
     "parents": {}
   },
   "config": {
     "configurable": {
       "thread_id": "abc",
       "checkpoint_ns": "",
-      "checkpoint_id": "1efbbdbe-572e-6980-8000-4ef52b34b0a6"
+      "checkpoint_id": "1efbbe34-d8b4-6d80-8006-8806c47ee54e"
     }
   },
-  "createdAt": "2024-12-16T18:30:59.352Z",
+  "createdAt": "2024-12-16T19:24:00.472Z",
   "parentConfig": {
     "configurable": {
       "thread_id": "abc",
       "checkpoint_ns": "",
-      "checkpoint_id": "1efbbdbe-5724-6d40-ffff-4e28da7e8ab1"
+      "checkpoint_id": "1efbbe34-d8ab-6140-8005-837b082ed8e6"
     }
   }
 }

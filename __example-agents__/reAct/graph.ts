@@ -1,5 +1,7 @@
 import {
   Annotation,
+  Command,
+  CompiledStateGraph,
   END,
   interrupt,
   type LangGraphRunnableConfig,
@@ -16,7 +18,7 @@ import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
 
 //  CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
-  model: Annotation<AllModelKeys | undefined>,
+  model: Annotation<AllModelKeys>,
 });
 const defaultConfig: typeof GraphConfigurationAnnotation.State = {
   model: "llama3_2__3b",
@@ -72,16 +74,16 @@ async function callModel(
   const llm = getLLM(c.model!); // .bindTools(tools);
 
   console.log("Interrupting graph...");
-  const response = await interrupt("What should the new count be");
-
-  console.log({ response });
+  const response = await interrupt("What should the new count be??") as string;
+  console.log("Value from interrupt", response);
+  const response2 = await interrupt("2! What should the new count be");
+  console.log("Value from interrupt 2", response2);
 
   const curCount = state.count;
   if (curCount === undefined || curCount === null) {
     throw new Error("count is not found");
   }
   const messages = state.messages ?? [];
-  console.log("Messages", messages);
 
   const res = await llm.invoke(messages, {
     tags: ["messages"],
@@ -127,6 +129,7 @@ const graph = workflow.compile({
   // checkpointer: new MemorySaver(),
 });
 
+// Testing
 import { CreateGraphDef } from "@/core/graph";
 import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 export const GraphDefinition = CreateGraphDef({
@@ -149,29 +152,41 @@ import { BunSqliteSaver } from "@/lib/checkpointers/bun-sqlite";
 
 const main = async () => {
   const db_path = __dirname + "/test.db";
-
-  const db = new Database(db_path);
-
-  graph.checkpointer = await BunSqliteSaver.fromConnString(db_path); // MemorySaver();
+  const cp = await BunSqliteSaver.fromConnString(db_path);
+  graph.checkpointer = cp; // MemorySaver();
   const config = {
-    configurable: { thread_id: "abc", model: ALL_MODELS.geminiFlash1_5 },
+    configurable: { thread_id: "abc", model: "qwen2_5__05b" as const },
   };
 
-  const res = await graph.invoke({ count: 1 }, config);
-  console.log({ res });
-
-  const state = await graph.getState(config);
-
-  console.log({ state });
-
-  await fs.writeFile(
-    __dirname + "/test.json",
-    JSON.stringify(state, null, 2),
+  // First invocation
+  await graph.invoke({}, config);
+  await graph.invoke(
+    new Command({ resume: { hello: "world", foo: "bar" } }),
+    config,
   );
-  // const goo = await graph
-  console.log({ tasks: state.tasks[0].interrupts[0] });
+  printGraphState(graph, "abc", "1");
+  await graph.invoke({}, config);
+  await graph.invoke(new Command({ resume: 2 }), config);
+  // printGraphState(graph, "abc", "3");
+  await graph.invoke({}, config);
+  await graph.invoke(new Command({ resume: 3 }), config);
+  await graph.invoke({}, config);
+  await graph.invoke(new Command({ resume: 3 }), config);
+  await graph.invoke({}, config);
+  await graph.invoke(new Command({ resume: 3 }), config);
+  await graph.invoke(new Command({ resume: 6 }), config);
+  // printGraphState(graph, "abc", "4");
+};
 
-  graph.invoke({ resume: 2 }, config);
+const printGraphState = async (
+  graph: CompiledStateGraph<any, any, any, any>,
+  threadId: string,
+  key?: string,
+) => {
+  const state = await graph.getState({ configurable: { thread_id: threadId } });
+  console.log(`STATE ${key ?? ""} :: `, {
+    state, //: state.tasks[0],
+  });
 };
 
 main();
