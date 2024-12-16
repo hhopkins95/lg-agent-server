@@ -1,5 +1,5 @@
 import { InMemoryStore } from "@/core/storage/memory";
-import type { TAssistant, TThread } from "@/core/types";
+import type { TAssistant, TSavedThread } from "@/core/types";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { GraphStateManager } from "../graph";
 
@@ -14,7 +14,9 @@ describe("GraphStateManager", () => {
     TAssistant<typeof TestGraphDef["config_annotation"]>
   >;
   let threadStore: InMemoryStore<
-    TThread<typeof TestGraphDef["state_annotation"]> & { assistant_id?: string }
+    TSavedThread<typeof TestGraphDef["state_annotation"]> & {
+      assistant_id?: string;
+    }
   >;
 
   beforeEach(async () => {
@@ -105,7 +107,7 @@ describe("GraphStateManager", () => {
 
   describe("graph execution", () => {
     let testAssistant: TAssistant<typeof TestGraphDef["config_annotation"]>;
-    let testThread: TThread<typeof TestGraphDef["state_annotation"]> & {
+    let testThread: TSavedThread<typeof TestGraphDef["state_annotation"]> & {
       assistant_id?: string;
     };
 

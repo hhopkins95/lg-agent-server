@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { TAnnotation, TAssistant, TThread } from "../types.ts";
+import type { TAnnotation, TAssistant, TSavedThread } from "../types.ts";
 import type { AppStorage, ThreadFilter } from "./types.ts";
 
 /**
@@ -115,17 +115,19 @@ export class FileSystemAppStorage<
   }
 
   // Thread operations
-  async createThread(thread: TThread<TState>): Promise<TThread<TState>> {
+  async createThread(
+    thread: TSavedThread<TState>,
+  ): Promise<TSavedThread<TState>> {
     const filePath = this.getThreadPath(thread.id);
     await fs.writeFile(filePath, JSON.stringify(thread, null, 2));
     return thread;
   }
 
-  async getThread(id: string): Promise<TThread<TState> | undefined> {
+  async getThread(id: string): Promise<TSavedThread<TState> | undefined> {
     try {
       const filePath = this.getThreadPath(id);
       const content = await fs.readFile(filePath, "utf-8");
-      return JSON.parse(content) as TThread<TState>;
+      return JSON.parse(content) as TSavedThread<TState>;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return undefined;
@@ -134,9 +136,9 @@ export class FileSystemAppStorage<
     }
   }
 
-  async listThreads(filter?: ThreadFilter): Promise<TThread<TState>[]> {
+  async listThreads(filter?: ThreadFilter): Promise<TSavedThread<TState>[]> {
     const files = await fs.readdir(this.threadsDir);
-    const threads: TThread<TState>[] = [];
+    const threads: TSavedThread<TState>[] = [];
 
     for (const file of files) {
       if (file.endsWith(".json")) {
@@ -144,7 +146,7 @@ export class FileSystemAppStorage<
           path.join(this.threadsDir, file),
           "utf-8",
         );
-        const thread = JSON.parse(content) as TThread<TState>;
+        const thread = JSON.parse(content) as TSavedThread<TState>;
 
         // Apply filters
         if (filter) {
@@ -180,8 +182,8 @@ export class FileSystemAppStorage<
 
   async updateThread(
     id: string,
-    updates: Partial<TThread<TState>>,
-  ): Promise<TThread<TState> | undefined> {
+    updates: Partial<TSavedThread<TState>>,
+  ): Promise<TSavedThread<TState> | undefined> {
     const existing = await this.getThread(id);
     if (!existing) return undefined;
 

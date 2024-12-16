@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { SQLiteAppStorage } from "../storage/sqlite.ts";
 import { Annotation } from "@langchain/langgraph";
-import type { TAssistant, TThread } from "../types.ts";
+import type { TAssistant, TSavedThread } from "../types.ts";
 
 describe("SQLiteAppStorage", () => {
   let storage: SQLiteAppStorage;
@@ -33,7 +33,7 @@ describe("SQLiteAppStorage", () => {
     },
   };
 
-  const testThread: TThread<TestState> = {
+  const testThread: TSavedThread<TestState> = {
     id: "test_thread",
     assistant_id: "test_assistant",
     created_at: new Date().toISOString(),

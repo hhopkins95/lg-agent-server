@@ -3,8 +3,8 @@ import type {
   TAnnotation,
   TAssistant,
   TGraphDef,
+  TSavedThread,
   TStreamYield,
-  TThread,
 } from "./types.ts";
 import type { AppStorage } from "./storage/types.ts";
 import type {
@@ -181,19 +181,19 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   }
 
   // Thread Management Methods
-  async listAllThreads(): Promise<TThread<TGraph["state_annotation"]>[]> {
+  async listAllThreads(): Promise<TSavedThread<TGraph["state_annotation"]>[]> {
     return await this.appStorage.listThreads();
   }
 
   async listThreadsByAssistant(
     assistantId: string,
-  ): Promise<TThread<TGraph["state_annotation"]>[]> {
+  ): Promise<TSavedThread<TGraph["state_annotation"]>[]> {
     return await this.appStorage.listThreads({ assistant_id: assistantId });
   }
 
   async createThread(
-    data?: Partial<TThread<TGraph["state_annotation"]>>,
-  ): Promise<TThread<TGraph["state_annotation"]>> {
+    data?: Partial<TSavedThread<TGraph["state_annotation"]>>,
+  ): Promise<TSavedThread<TGraph["state_annotation"]>> {
     let assistant_id = data?.assistant_id;
     if (!assistant_id) {
       const defaultAssistant = await this.getDefaultAssistant();
@@ -215,10 +215,13 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
   async getThread(
     threadId: string,
-  ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
+  ): Promise<TSavedThread<TGraph["state_annotation"]> | undefined> {
     // First try to get from checkpointer if available
     if (this.checkpointer) {
       try {
+        const cur = await this.graphConfig.graph.getState({
+          configurable: { threadId: threadId },
+        });
         // TODO: Implement checkpointer.get
         // const checkpoint = await this.checkpointer.get(threadId);
         // if (checkpoint) {
@@ -241,8 +244,8 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
   async updateThread(
     threadId: string,
-    updates: Partial<TThread<TGraph["state_annotation"]>>,
-  ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
+    updates: Partial<TSavedThread<TGraph["state_annotation"]>>,
+  ): Promise<TSavedThread<TGraph["state_annotation"]> | undefined> {
     return this.appStorage.updateThread(threadId, updates);
   }
 
@@ -314,7 +317,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
 
     // Get the thread that will be used on this run
-    let thread: TThread<TGraph["state_annotation"]> | undefined;
+    let thread: TSavedThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
       thread = await this.getThread(threadId);
     }
@@ -366,7 +369,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
 
     // Get the thread that will be used on this run
-    let thread: TThread<TGraph["state_annotation"]> | undefined;
+    let thread: TSavedThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
       thread = await this.getThread(threadId);
     }

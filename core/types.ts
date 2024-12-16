@@ -1,3 +1,4 @@
+import type { TInterrupt } from "@/lib/interrupt";
 import type {
   AIMessageChunk,
   ToolMessageChunk,
@@ -65,18 +66,22 @@ export type TAssistant<TConfig extends TAnnotation> = {
  * Collection of runs for a graph. Structure for managing state
  */
 
-export type TThread<TState extends TAnnotation> = {
+export type TSavedThread<TState extends TAnnotation> = {
   id: string;
   assistant_id?: string;
   created_at: string;
   updated_at: string;
-  status: "idle" | "busy" | "interrupted" | "error";
   values?: TState["State"]; // current state values
 };
 
-export type TThreadState<TState extends TAnnotation> = StateSnapshot & {
-  values: TState["State"];
-}; // Current nodes, tasks, etc..
+export type TThreadState<TState extends TAnnotation = TAnnotation> =
+  & TSavedThread<TState>
+  & {
+    status: "idle" | "running" | "interrupted";
+    pending_interrupt?: TInterrupt;
+  }; // Current nodes, tasks, etc..
+
+let foo: TThreadState;
 
 /**
 Stream Response

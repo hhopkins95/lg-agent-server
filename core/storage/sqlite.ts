@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import type { TAnnotation, TAssistant, TThread } from "../types.ts";
+import type { TAnnotation, TAssistant, TSavedThread } from "../types.ts";
 import type { AppStorage, ThreadFilter } from "./types.ts";
 
 /**
@@ -34,7 +34,6 @@ export class SQLiteAppStorage<
         assistant_id TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        status TEXT NOT NULL CHECK(status IN ('idle', 'busy', 'interrupted', 'error')),
         thread_values TEXT,
         FOREIGN KEY(assistant_id) REFERENCES assistants(id) ON DELETE SET NULL
       )
@@ -133,10 +132,12 @@ export class SQLiteAppStorage<
     }
 
     // Thread operations
-    async createThread(thread: TThread<TState>): Promise<TThread<TState>> {
+    async createThread(
+        thread: TSavedThread<TState>,
+    ): Promise<TSavedThread<TState>> {
         const stmt = this.db.prepare(`
-      INSERT INTO threads (id, assistant_id, created_at, updated_at, status, thread_values)
-      VALUES ($id, $assistant_id, $created_at, $updated_at, $status, $values)
+      INSERT INTO threads (id, assistant_id, created_at, updated_at, thread_values)
+      VALUES ($id, $assistant_id, $created_at, $updated_at, $values)
     `);
 
         stmt.run({
@@ -144,14 +145,13 @@ export class SQLiteAppStorage<
             $assistant_id: thread.assistant_id || null,
             $created_at: thread.created_at,
             $updated_at: thread.updated_at,
-            $status: thread.status,
             $values: thread.values ? JSON.stringify(thread.values) : null,
         });
 
         return thread;
     }
 
-    async getThread(id: string): Promise<TThread<TState> | undefined> {
+    async getThread(id: string): Promise<TSavedThread<TState> | undefined> {
         const row = this.db.prepare(`
       SELECT * FROM threads WHERE id = $id
     `).get({ $id: id }) as any;
@@ -163,14 +163,13 @@ export class SQLiteAppStorage<
             assistant_id: row.assistant_id,
             created_at: row.created_at,
             updated_at: row.updated_at,
-            status: row.status,
             values: row.thread_values
                 ? JSON.parse(row.thread_values)
                 : undefined,
         };
     }
 
-    async listThreads(filter?: ThreadFilter): Promise<TThread<TState>[]> {
+    async listThreads(filter?: ThreadFilter): Promise<TSavedThread<TState>[]> {
         let query = "SELECT * FROM threads";
         const params: any = {};
         const conditions: string[] = [];
@@ -179,10 +178,6 @@ export class SQLiteAppStorage<
             if (filter.assistant_id) {
                 conditions.push("assistant_id = $assistant_id");
                 params.$assistant_id = filter.assistant_id;
-            }
-            if (filter.status) {
-                conditions.push("status = $status");
-                params.$status = filter.status;
             }
             if (filter.created_after) {
                 conditions.push("created_at > $created_after");
@@ -205,7 +200,6 @@ export class SQLiteAppStorage<
             assistant_id: row.assistant_id,
             created_at: row.created_at,
             updated_at: row.updated_at,
-            status: row.status,
             values: row.thread_values
                 ? JSON.parse(row.thread_values)
                 : undefined,
@@ -214,8 +208,8 @@ export class SQLiteAppStorage<
 
     async updateThread(
         id: string,
-        updates: Partial<TThread<TState>>,
-    ): Promise<TThread<TState> | undefined> {
+        updates: Partial<TSavedThread<TState>>,
+    ): Promise<TSavedThread<TState> | undefined> {
         const current = await this.getThread(id);
         if (!current) return undefined;
 
@@ -224,7 +218,6 @@ export class SQLiteAppStorage<
       UPDATE threads 
       SET assistant_id = $assistant_id,
           updated_at = $updated_at,
-          status = $status,
           thread_values = $values
       WHERE id = $id
     `);
@@ -233,7 +226,6 @@ export class SQLiteAppStorage<
             $id: id,
             $assistant_id: updated.assistant_id || null,
             $updated_at: updated.updated_at,
-            $status: updated.status,
             $values: updated.values ? JSON.stringify(updated.values) : null,
         });
 

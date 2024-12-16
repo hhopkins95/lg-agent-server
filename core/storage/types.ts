@@ -1,4 +1,4 @@
-import type { TAnnotation, TAssistant, TThread } from "../types.ts";
+import type { TAnnotation, TAssistant, TSavedThread } from "../types.ts";
 
 /**
  * Filter type for querying threads
@@ -30,13 +30,13 @@ export interface AppStorage<
     deleteAssistant(id: string): Promise<boolean>;
 
     // Thread operations
-    createThread(thread: TThread<TState>): Promise<TThread<TState>>;
-    getThread(id: string): Promise<TThread<TState> | undefined>;
-    listThreads(filter?: ThreadFilter): Promise<TThread<TState>[]>;
+    createThread(thread: TSavedThread<TState>): Promise<TSavedThread<TState>>;
+    getThread(id: string): Promise<TSavedThread<TState> | undefined>;
+    listThreads(filter?: ThreadFilter): Promise<TSavedThread<TState>[]>;
     updateThread(
         id: string,
-        updates: Partial<TThread<TState>>,
-    ): Promise<TThread<TState> | undefined>;
+        updates: Partial<TSavedThread<TState>>,
+    ): Promise<TSavedThread<TState> | undefined>;
     deleteThread(id: string): Promise<boolean>;
 
     // Lifecycle operations
