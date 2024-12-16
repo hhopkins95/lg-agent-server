@@ -17,7 +17,7 @@ export class SQLiteAppStorage<
 
     async initialize(): Promise<void> {
         // Create assistants table
-        this.db.run(`
+        await this.db.exec(`
       CREATE TABLE IF NOT EXISTS assistants (
         id TEXT PRIMARY KEY,
         graph_name TEXT NOT NULL,
@@ -28,7 +28,7 @@ export class SQLiteAppStorage<
     `);
 
         // Create threads table
-        this.db.run(`
+        await this.db.exec(`
       CREATE TABLE IF NOT EXISTS threads (
         id TEXT PRIMARY KEY,
         assistant_id TEXT,

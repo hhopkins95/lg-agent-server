@@ -6,13 +6,13 @@ import type {
   TStreamYield,
   TThread,
 } from "./types.ts";
-import type { DataStore, DataStoreFilter } from "./storage/index.ts";
+import type { AppStorage } from "./storage/app-storage.ts";
 import type {
   AIMessageChunk,
   ToolMessageChunk,
 } from "@langchain/core/messages";
-import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
-import { BaseCheckpointSaver } from "@langchain/langgraph";
+import { type BaseCheckpointSaver, MemorySaver } from "@langchain/langgraph";
+import { SQLiteAppStorage } from "./storage/sqlite.ts";
 
 /**
  * TODO :
@@ -75,33 +75,38 @@ export function CreateGraphDef<
  * @template TGraph - The graph definition
  */
 export class GraphStateManager<TGraph extends TGraphDef> {
-  protected assistantStore: DataStore<TAssistant<TGraph["config_annotation"]>>;
-  protected threadStore: DataStore<TThread<TGraph["state_annotation"]>>;
+  protected appStorage: AppStorage<
+    TGraph["config_annotation"],
+    TGraph["state_annotation"]
+  >;
+  protected checkpointer: BaseCheckpointSaver;
   protected graphConfig: TGraph;
 
   /**
    * Creates a new GraphManager
    * @param graphConfig - The graph configuration. Create using 'CreateGraphDef'
-   * @param assistantStore - The storage for the assistant
-   * @param threadStore - The storage for the threads
+   * @param appStorage - The storage for assistants and threads
+   * @param checkpointer - Optional langgraph checkpointer for run history and interrupts
    */
   constructor(
     graphConfig: TGraph,
-    assistantStore: DataStore<TAssistant<TGraph["config_annotation"]>>,
-    threadStore: DataStore<TThread<TGraph["state_annotation"]>>,
+    appStorage?: AppStorage<
+      TGraph["config_annotation"],
+      TGraph["state_annotation"]
+    >,
+    checkpointer?: BaseCheckpointSaver,
   ) {
     this.graphConfig = graphConfig;
-    this.assistantStore = assistantStore;
-    this.threadStore = threadStore;
+    this.appStorage = appStorage ?? new SQLiteAppStorage(":memory:");
+    this.checkpointer = checkpointer ?? new MemorySaver();
   }
 
   /**
    * Initializes all managers
    */
   async initialize(): Promise<void> {
-    // Initialize stores
-    this.assistantStore.initialize && await this.assistantStore.initialize();
-    this.threadStore.initialize && await this.threadStore.initialize();
+    // Initialize app storage
+    await this.appStorage.initialize();
 
     // Load default assistants
     await this.loadAssistantsFromConfig();
@@ -126,13 +131,13 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
 
     for (const assistant of all_assistants) {
-      const existing = await this.assistantStore.get(assistant.id);
+      const existing = await this.appStorage.getAssistant(assistant.id);
       if (!existing) {
-        await this.createAssistant(assistant);
+        await this.appStorage.createAssistant(assistant);
         continue;
       }
       if (should_upsert) {
-        await this.updateAssistant(assistant.id, assistant);
+        await this.appStorage.updateAssistant(assistant.id, assistant);
       }
     }
   }
@@ -141,19 +146,19 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   async getAssistant(
     id: string,
   ): Promise<TAssistant<TGraph["config_annotation"]> | undefined> {
-    return await this.assistantStore.get(id);
+    return await this.appStorage.getAssistant(id);
   }
 
   async getDefaultAssistant(): Promise<
     TAssistant<TGraph["config_annotation"]> | undefined
   > {
-    return await this.assistantStore.get("__DEFAULT__");
+    return await this.appStorage.getAssistant("__DEFAULT__");
   }
 
   async listAllAssistants(): Promise<
     TAssistant<TGraph["config_annotation"]>[]
   > {
-    return await this.assistantStore.list();
+    return await this.appStorage.listAssistants();
   }
 
   async createAssistant(
@@ -165,29 +170,25 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       id: assistant.id ?? `assistant_${crypto.randomUUID()}`,
       ...assistant,
     };
-    return this.assistantStore.create(assistantWithId);
+    return this.appStorage.createAssistant(assistantWithId);
   }
 
   async updateAssistant(
     id: string,
     updates: Partial<TAssistant<TGraph["config_annotation"]>>,
   ): Promise<TAssistant<TGraph["config_annotation"]> | undefined> {
-    const existing = await this.getAssistant(id);
-    if (!existing) return undefined;
-    return this.assistantStore.update(id, { ...existing, ...updates });
+    return this.appStorage.updateAssistant(id, updates);
   }
 
   // Thread Management Methods
   async listAllThreads(): Promise<TThread<TGraph["state_annotation"]>[]> {
-    return await this.threadStore.list();
+    return await this.appStorage.listThreads();
   }
 
   async listThreadsByAssistant(
     assistantId: string,
   ): Promise<TThread<TGraph["state_annotation"]>[]> {
-    return await this.threadStore.query({
-      assistant_id: { $eq: assistantId },
-    } as DataStoreFilter<TThread<TGraph["state_annotation"]>>);
+    return await this.appStorage.listThreads({ assistant_id: assistantId });
   }
 
   async createThread(
@@ -202,7 +203,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       assistant_id = defaultAssistant.id;
     }
 
-    return await this.threadStore.create({
+    return await this.appStorage.createThread({
       id: `thread_${crypto.randomUUID()}`,
       assistant_id,
       created_at: new Date().toISOString(),
@@ -215,52 +216,79 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   async getThread(
     threadId: string,
   ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
-    return await this.threadStore.get(threadId);
+    // First try to get from checkpointer if available
+    if (this.checkpointer) {
+      try {
+        // TODO: Implement checkpointer.get
+        // const checkpoint = await this.checkpointer.get(threadId);
+        // if (checkpoint) {
+        //   return {
+        //     id: threadId,
+        //     status: "interrupted",
+        //     values: checkpoint.state,
+        //     created_at: new Date(checkpoint.timestamp).toISOString(),
+        //     updated_at: new Date(checkpoint.timestamp).toISOString(),
+        //   };
+        // }
+      } catch (error) {
+        console.error("Error getting checkpoint:", error);
+      }
+    }
+
+    // Fall back to app storage
+    return await this.appStorage.getThread(threadId);
   }
 
   async updateThread(
     threadId: string,
     updates: Partial<TThread<TGraph["state_annotation"]>>,
   ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
-    const existing = await this.getThread(threadId);
-    if (!existing) return undefined;
-
-    const updated: Partial<TThread<TGraph["state_annotation"]>> = {
-      ...existing,
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-
-    return this.threadStore.update(threadId, updated);
+    return this.appStorage.updateThread(threadId, updates);
   }
 
   async getThreadState(
     threadId: string,
   ): Promise<TGraph["state_annotation"]["State"] | undefined> {
-    const thread = await this.getThread(threadId);
-    if (!thread) return undefined;
-    return thread.values;
+    // First try to get from checkpointer if available
+    if (this.checkpointer) {
+      try {
+        // TODO: Implement checkpointer.get
+        // const checkpoint = await this.checkpointer.get(threadId);
+        // if (checkpoint) {
+        //   return checkpoint.state;
+        // }
+      } catch (error) {
+        console.error("Error getting checkpoint state:", error);
+      }
+    }
+
+    // Fall back to app storage
+    const thread = await this.appStorage.getThread(threadId);
+    return thread?.values;
   }
 
   async saveThreadState(
     threadId: string,
     state: TGraph["state_annotation"]["State"],
   ): Promise<void> {
-    await this.threadStore.update(threadId, {
+    // Save to checkpointer if available
+    if (this.checkpointer) {
+      try {
+        // TODO: Implement checkpointer.put
+        // await this.checkpointer.put(threadId, state);
+      } catch (error) {
+        console.error("Error saving checkpoint:", error);
+      }
+    }
+
+    // Always save to app storage
+    await this.appStorage.updateThread(threadId, {
       values: state,
       updated_at: new Date().toISOString(),
-    } as Partial<TThread<TGraph["state_annotation"]>>);
+    });
   }
 
-  /**
-   * Invoke Graph and wait for it to complete
-   *
-   * @param assistantId - ID of the assistant to use
-   * @param threadId - ID of the thread to use
-   * @param shouldCreateThread - Whether to create a new thread if one does not exist
-   * @param state - Initial state for the thread
-   * @param config - Configuration for the thread
-   */
+  // Keep existing invoke and stream implementations
   async invokeGraph({
     assistantId,
     threadId,
@@ -301,8 +329,6 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     const invokeConfig = config ?? assistant.config ??
       this.graphConfig.default_config;
 
-    const foo = new SqliteSaver("");
-
     const res = await this.graphConfig.graph.invoke({ update: invokeState }, {
       configurable: {
         ...invokeConfig,
@@ -314,16 +340,6 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
     return res;
   }
-
-  /**
-   * Stream Graph execution and get real-time updates
-   *
-   * @param assistantId - ID of the assistant to use
-   * @param threadId - ID of the thread to use
-   * @param shouldCreateThread - Whether to create a new thread if one does not exist
-   * @param state - Initial state for the thread
-   * @param config - Configuration for the thread
-   */
 
   async *streamGraph({
     assistantId,
@@ -337,9 +353,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     shouldCreateThread?: boolean;
     state?: TGraph["state_annotation"]["State"];
     config?: TGraph["config_annotation"]["State"];
-  }): AsyncGenerator<
-    TStreamYield<TGraph>
-  > {
+  }): AsyncGenerator<TStreamYield<TGraph>> {
     // Get the assistant that will be used on this run
     let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
     if (!assistantId) {
@@ -367,7 +381,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       this.graphConfig.default_config;
 
     // Use the graph's stream method instead of invoke
-    const stream = await this.graphConfig.graph.stream(invokeState, {
+    const stream = await this.graphConfig.graph.stream({ ...invokeState }, {
       configurable: {
         ...invokeConfig,
       },
@@ -376,7 +390,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
     let finalState: TGraph["state_annotation"]["State"] | undefined;
 
-    // Helper to check if the meta tags of the chunk match any of the stream keys. If yes, returns the state key
+    // Helper to check if the meta tags of the chunk match any of the stream keys
     const getStreamKeyFromMetaTags = <T>(
       keys: T[] | undefined,
       tags: string[] | undefined,

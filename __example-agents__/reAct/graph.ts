@@ -154,6 +154,7 @@ const main = async () => {
   const db_path = __dirname + "/test.db";
   const cp = await BunSqliteSaver.fromConnString(db_path);
   graph.checkpointer = cp; // MemorySaver();
+
   const config = {
     configurable: { thread_id: "abc", model: "qwen2_5__05b" as const },
   };
