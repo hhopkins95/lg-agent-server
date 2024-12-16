@@ -11,6 +11,8 @@ import type {
   AIMessageChunk,
   ToolMessageChunk,
 } from "@langchain/core/messages";
+import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
+import { BaseCheckpointSaver } from "@langchain/langgraph";
 
 /**
  *  Applies type constraints when creating a graph definitiaon
@@ -264,7 +266,9 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     const invokeConfig = config ?? assistant.config ??
       this.graphConfig.default_config;
 
-    const res = await this.graphConfig.graph.invoke(invokeState, {
+    const foo = new SqliteSaver("");
+
+    const res = await this.graphConfig.graph.invoke({ update: invokeState }, {
       configurable: {
         ...invokeConfig,
       },
