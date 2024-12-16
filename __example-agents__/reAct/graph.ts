@@ -144,14 +144,15 @@ export const GraphDefinition = CreateGraphDef({
 
 import fs from "node:fs/promises";
 
-import Database from "libsql";
+import Database from "bun:sqlite";
+import { BunSqliteSaver } from "@/lib/checkpointers/bun-sqlite";
 
 const main = async () => {
   const db_path = __dirname + "/test.db";
 
   const db = new Database(db_path);
 
-  graph.checkpointer = SqliteSaver.fromConnString(db_path); // MemorySaver();
+  graph.checkpointer = await BunSqliteSaver.fromConnString(db_path); // MemorySaver();
   const config = {
     configurable: { thread_id: "abc", model: ALL_MODELS.geminiFlash1_5 },
   };

@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS writes (
             args.push(checkpoint_id);
         }
         const row = this.db.prepare(sql).get(...args) as CheckpointRow;
-        if (row === undefined) {
+        if (row === undefined || row == null) {
             return undefined;
         }
         let finalConfig = config;

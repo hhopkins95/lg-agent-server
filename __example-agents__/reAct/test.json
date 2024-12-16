@@ -8,7 +8,7 @@
   ],
   "tasks": [
     {
-      "id": "3c181484-c457-580d-b9d1-9a2f0f31245b",
+      "id": "64631565-5cfd-58ac-add6-1a847cb896cf",
       "name": "callModel",
       "path": [
         "__pregel_pull",
@@ -20,7 +20,7 @@
           "when": "during",
           "resumable": true,
           "ns": [
-            "callModel:3c181484-c457-580d-b9d1-9a2f0f31245b"
+            "callModel:64631565-5cfd-58ac-add6-1a847cb896cf"
           ]
         }
       ]
@@ -35,16 +35,16 @@
   "config": {
     "configurable": {
       "thread_id": "abc",
-      "checkpoint_id": "1efbb6c3-8cb6-62d0-8000-494c903676c7",
-      "checkpoint_ns": ""
+      "checkpoint_ns": "",
+      "checkpoint_id": "1efbbdbe-572e-6980-8000-4ef52b34b0a6"
     }
   },
-  "createdAt": "2024-12-16T05:11:35.549Z",
+  "createdAt": "2024-12-16T18:30:59.352Z",
   "parentConfig": {
     "configurable": {
       "thread_id": "abc",
       "checkpoint_ns": "",
-      "checkpoint_id": "1efbb6c3-8cae-6da0-ffff-d9f850936b7e"
+      "checkpoint_id": "1efbbdbe-5724-6d40-ffff-4e28da7e8ab1"
     }
   }
 }
