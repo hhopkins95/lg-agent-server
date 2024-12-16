@@ -29,7 +29,7 @@ import { BaseCheckpointSaver } from "@langchain/langgraph";
  * Reasoning :
  * the checkpointer automatically tracks everything we need for runs / checkpoints, but no built in way to query threads / assistants. Only the thread_id can be used as a query param. We need our own storage to manage who has access to what threads, and a way to actually query them.
  *
- * Checkpointer will store the history for any given thread and interrupt values. Any time the state settles, it will be stored in the app storage. So, if the checkpointer ever goes down / switches, the app storage will have the latest state.
+ * Checkpointer will store the history for any given thread and interrupt values. Any time the state settles, it will be stored in the app storage. So, if the checkpointer ever goes down / switches, the app storage will have the latest state. We will generally get the state from the checkpointer first because it will be more up to date, and then fall back to the app storage if necessary. This just makes the app storage exportable. App storage of the thread will also have other app-specific data, like user_id, assistant_id, etc.
  *
  * Can still pass the same db to the checkpointer and the app storage, but we'll have seperate interfaces in case they are ever decoupled.
  *
@@ -37,6 +37,16 @@ import { BaseCheckpointSaver } from "@langchain/langgraph";
  * Update getting thread state logic to first check the checkpointer, then the app storage.
  *
  * Update thread type to include status, which should now include any interrupted data (so it can be resumed).
+ *
+ *  /////
+ * HOW THIS SHOULD BE DONE :
+ * refactor / remove the current DataStore interface, and make one specific for assistants and threads.That will be the app storage. Create a new class for the app storage. Should expose all of the same methods that we are currently using. Basically just combines the AssistantStore and ThreadStore into one, but with better interaction between them.
+ *
+ * Create a SQLLite implementation of this class.
+ *
+ * Checkpointer comes directly from langgraph and is attached directly to the graph.
+ *
+ * Graph state manager should be initialized with a AppStorage class and a Checkpointer class.
  */
 
 /**
