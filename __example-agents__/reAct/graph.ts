@@ -1,12 +1,14 @@
 import {
   Annotation,
   END,
+  interrupt,
   type LangGraphRunnableConfig,
+  MemorySaver,
   MessagesAnnotation,
   StateGraph,
 } from "@langchain/langgraph";
 import { z } from "zod";
-import { type AllModelKeys } from "@/lib/models/models-registry";
+import { ALL_MODELS, type AllModelKeys } from "@/lib/models/models-registry";
 import { getLLM } from "@/lib/models/loadLLM";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { tool } from "@langchain/core/tools";
@@ -14,7 +16,7 @@ import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
 
 //  CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
-  model: Annotation<AllModelKeys>,
+  model: Annotation<AllModelKeys | undefined>,
 });
 const defaultConfig: typeof GraphConfigurationAnnotation.State = {
   model: "llama3_2__3b",
@@ -67,7 +69,12 @@ async function callModel(
   >,
 ): Promise<typeof GraphStateAnnotation.Update> {
   const c = ensureGraphConfiguration(runnableConfig, defaultConfig); // if c is not defined, create it with defaults
-  const llm = getLLM(c.model); // .bindTools(tools);
+  const llm = getLLM(c.model!); // .bindTools(tools);
+
+  console.log("Interrupting graph...");
+  const response = await interrupt("What should the new count be");
+
+  console.log({ response });
 
   const curCount = state.count;
   if (curCount === undefined || curCount === null) {
@@ -121,6 +128,7 @@ const graph = workflow.compile({
 });
 
 import { CreateGraphDef } from "@/core/graph";
+import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 export const GraphDefinition = CreateGraphDef({
   graph,
   name: "test_graph",
@@ -133,3 +141,36 @@ export const GraphDefinition = CreateGraphDef({
   state_llm_stream_keys: streamStateKeys,
   other_llm_stream_keys: otherStreamKeys,
 });
+
+import fs from "node:fs/promises";
+
+import Database from "libsql";
+
+const main = async () => {
+  const db_path = __dirname + "/test.db";
+
+  const db = new Database(db_path);
+
+  graph.checkpointer = SqliteSaver.fromConnString(db_path); // MemorySaver();
+  const config = {
+    configurable: { thread_id: "abc", model: ALL_MODELS.geminiFlash1_5 },
+  };
+
+  const res = await graph.invoke({ count: 1 }, config);
+  console.log({ res });
+
+  const state = await graph.getState(config);
+
+  console.log({ state });
+
+  await fs.writeFile(
+    __dirname + "/test.json",
+    JSON.stringify(state, null, 2),
+  );
+  // const goo = await graph
+  console.log({ tasks: state.tasks[0].interrupts[0] });
+
+  graph.invoke({ resume: 2 }, config);
+};
+
+main();
