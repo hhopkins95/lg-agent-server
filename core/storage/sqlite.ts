@@ -27,7 +27,7 @@ export class SQLiteAppStorage<
       )
     `);
 
-        // Create threads table
+        // Create threads table with ON DELETE SET NULL for assistant_id foreign key
         await this.db.exec(`
       CREATE TABLE IF NOT EXISTS threads (
         id TEXT PRIMARY KEY,
@@ -35,8 +35,8 @@ export class SQLiteAppStorage<
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         status TEXT NOT NULL CHECK(status IN ('idle', 'busy', 'interrupted', 'error')),
-        values TEXT,
-        FOREIGN KEY(assistant_id) REFERENCES assistants(id)
+        thread_values TEXT,
+        FOREIGN KEY(assistant_id) REFERENCES assistants(id) ON DELETE SET NULL
       )
     `);
     }
@@ -135,7 +135,7 @@ export class SQLiteAppStorage<
     // Thread operations
     async createThread(thread: TThread<TState>): Promise<TThread<TState>> {
         const stmt = this.db.prepare(`
-      INSERT INTO threads (id, assistant_id, created_at, updated_at, status, values)
+      INSERT INTO threads (id, assistant_id, created_at, updated_at, status, thread_values)
       VALUES ($id, $assistant_id, $created_at, $updated_at, $status, $values)
     `);
 
@@ -164,7 +164,9 @@ export class SQLiteAppStorage<
             created_at: row.created_at,
             updated_at: row.updated_at,
             status: row.status,
-            values: row.values ? JSON.parse(row.values) : undefined,
+            values: row.thread_values
+                ? JSON.parse(row.thread_values)
+                : undefined,
         };
     }
 
@@ -204,7 +206,9 @@ export class SQLiteAppStorage<
             created_at: row.created_at,
             updated_at: row.updated_at,
             status: row.status,
-            values: row.values ? JSON.parse(row.values) : undefined,
+            values: row.thread_values
+                ? JSON.parse(row.thread_values)
+                : undefined,
         }));
     }
 
@@ -221,7 +225,7 @@ export class SQLiteAppStorage<
       SET assistant_id = $assistant_id,
           updated_at = $updated_at,
           status = $status,
-          values = $values
+          thread_values = $values
       WHERE id = $id
     `);
 
