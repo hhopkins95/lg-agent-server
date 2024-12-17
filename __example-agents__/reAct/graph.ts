@@ -72,9 +72,10 @@ async function callModel(
 ): Promise<typeof GraphStateAnnotation.Update> {
   const c = ensureGraphConfiguration(runnableConfig, defaultConfig); // if c is not defined, create it with defaults
   const llm = getLLM(c.model!); // .bindTools(tools);
-
   console.log("Interrupting graph...");
-  const response = await interrupt("What should the new count be??") as string;
+  const response = await interruptGraph({
+    query: "1! What should the new count be",
+  }, runnableConfig);
   console.log("Value from interrupt", response);
   const response2 = await interrupt("2! What should the new count be");
   console.log("Value from interrupt 2", response2);
@@ -149,6 +150,7 @@ import fs from "node:fs/promises";
 
 import Database from "bun:sqlite";
 import { BunSqliteSaver } from "@/lib/checkpointers/bun-sqlite";
+import { interruptGraph } from "@/lib/utils/interruptGraph";
 
 const main = async () => {
   const db_path = __dirname + "/test.db";
@@ -160,22 +162,23 @@ const main = async () => {
   };
 
   // First invocation
+  const stream = await graph.stream({}, {
+    ...config,
+    streamMode: ["custom"],
+  });
+
+  for await (const [eventType, data] of stream) {
+    console.log("EVENT", eventType);
+    console.log("DATA", data);
+  }
+  return;
   await graph.invoke({}, config);
   await graph.invoke(
     new Command({ resume: { hello: "world", foo: "bar" } }),
     config,
   );
   printGraphState(graph, "abc", "1");
-  await graph.invoke({}, config);
-  await graph.invoke(new Command({ resume: 2 }), config);
-  // printGraphState(graph, "abc", "3");
-  await graph.invoke({}, config);
-  await graph.invoke(new Command({ resume: 3 }), config);
-  await graph.invoke({}, config);
-  await graph.invoke(new Command({ resume: 3 }), config);
-  await graph.invoke({}, config);
-  await graph.invoke(new Command({ resume: 3 }), config);
-  await graph.invoke(new Command({ resume: 6 }), config);
+
   // printGraphState(graph, "abc", "4");
 };
 
@@ -190,4 +193,4 @@ const printGraphState = async (
   });
 };
 
-main();
+// main();

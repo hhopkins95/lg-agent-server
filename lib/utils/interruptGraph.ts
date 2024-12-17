@@ -1,4 +1,4 @@
-import { interrupt } from "@langchain/langgraph";
+import { interrupt, type LangGraphRunnableConfig } from "@langchain/langgraph";
 
 export type TInterrupt = {
     query: string;
@@ -6,6 +6,10 @@ export type TInterrupt = {
     expects?: "number" | "boolean" | "string" | "object" | "array";
 };
 
-export const interruptGraph = (vals: TInterrupt) => {
+export const interruptGraph = async (
+    vals: TInterrupt,
+    config: LangGraphRunnableConfig,
+) => {
+    config.writer?.({ type: "interrupt", data: vals });
     return interrupt(vals);
 };

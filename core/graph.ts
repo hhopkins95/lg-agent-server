@@ -270,7 +270,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     return thread?.values;
   }
 
-  async saveThreadState(
+  private async saveThreadState(
     threadId: string,
     state: TGraph["state_annotation"]["State"],
   ): Promise<void> {
@@ -388,7 +388,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       configurable: {
         ...invokeConfig,
       },
-      streamMode: ["values", "messages"],
+      streamMode: ["values", "messages", "custom"],
     });
 
     let finalState: TGraph["state_annotation"]["State"] | undefined;
@@ -415,10 +415,13 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       if (eventType == "values") {
         let _data = data as TGraph["state_annotation"]["State"];
         finalState = _data;
+        const state = await this.getThreadState(thread!.id);
         // console.log("State Update : ", _data);
-        yield {
-          full_state_update: _data,
-        };
+        if (state) {
+          yield {
+            full_state_update: state,
+          };
+        }
       }
 
       // LLM stream event
