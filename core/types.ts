@@ -66,11 +66,12 @@ export type TAssistant<TConfig extends TAnnotation> = {
  * Collection of runs for a graph. Structure for managing state
  */
 
-export type TSavedThread<TState extends TAnnotation> = {
+export type TThread<TState extends TAnnotation> = {
   id: string;
   assistant_id?: string;
   created_at: string;
   updated_at: string;
+  status: TThreadStatus;
   values?: TState["State"]; // current state values
 };
 
@@ -84,9 +85,9 @@ export type TThreadStatus = {
   error: string;
 };
 
-export type TThreadState<TState extends TAnnotation = TAnnotation> =
-  & TSavedThread<TState>
-  & TThreadStatus;
+// export type TThreadState<TState extends TAnnotation = TAnnotation> =
+//   & TSavedThread<TState>
+//   & TThreadStatus;
 /**
 Stream Response
 */
@@ -98,7 +99,7 @@ export type LLMStreamMeta = {
   langgraph_step?: number;
 };
 export type TStreamYield<TGraph extends TGraphDef> = {
-  full_state_update?: TThreadState<TGraph["state_annotation"]>;
+  full_state_update?: TThread<TGraph["state_annotation"]>;
   state_llm_stream_data?: {
     key: TGraph extends TGraphDef<any, any, infer K, any> ? K : never;
     chunk: AIMessageChunk | ToolMessageChunk;

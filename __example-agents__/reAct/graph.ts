@@ -1,3 +1,9 @@
+import { BunSqliteSaver } from "@/lib/checkpointers/bun-sqlite";
+import { getLLM } from "@/lib/models/loadLLM";
+import { type AllModelKeys } from "@/lib/models/models-registry";
+import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
+import { interruptGraph } from "@/lib/utils/interrupt-graph";
+import { tool } from "@langchain/core/tools";
 import {
   Annotation,
   Command,
@@ -5,16 +11,11 @@ import {
   END,
   interrupt,
   type LangGraphRunnableConfig,
-  MemorySaver,
   MessagesAnnotation,
   StateGraph,
 } from "@langchain/langgraph";
-import { z } from "zod";
-import { ALL_MODELS, type AllModelKeys } from "@/lib/models/models-registry";
-import { getLLM } from "@/lib/models/loadLLM";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { tool } from "@langchain/core/tools";
-import { ensureGraphConfiguration } from "@/lib/utils/get-graph-config";
+import { z } from "zod";
 
 //  CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
@@ -70,9 +71,10 @@ async function callModel(
     typeof GraphConfigurationAnnotation.State
   >,
 ): Promise<typeof GraphStateAnnotation.Update> {
-  console.log("starting wait");
+  console.log("Mock Long running process start...");
+
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  console.log("ending wait");
+  console.log("Mock Long running process end...");
   return {
     count: state.count + 1,
     messages: state.messages,
@@ -141,7 +143,6 @@ const graph = workflow.compile({
 
 // Testing -- CLINE IGNORE THIS
 import { CreateGraphDef } from "@/core/graph";
-import { SqliteSaver } from "@langchain/langgraph-checkpoint-sqlite";
 export const GraphDefinition = CreateGraphDef({
   graph,
   name: "test_graph",
@@ -155,31 +156,41 @@ export const GraphDefinition = CreateGraphDef({
   other_llm_stream_keys: otherStreamKeys,
 });
 
-import fs from "node:fs/promises";
-import Database from "bun:sqlite";
-import { BunSqliteSaver } from "@/lib/checkpointers/bun-sqlite";
-import { interruptGraph } from "@/lib/utils/interrupt-graph";
-
 const main = async () => {
   const db_path = __dirname + "/test.db";
   const cp = await BunSqliteSaver.fromConnString(db_path);
   graph.checkpointer = cp; // MemorySaver();
 
   const config = {
-    configurable: { thread_id: "abcd", model: "qwen2_5__05b" as const },
+    configurable: { thread_id: "abcde", model: "qwen2_5__05b" as const },
   };
 
-  graph.invoke({}, config);
+  const state0 = await graph.getState(config);
+  console.log("Initial Next", state0.next);
+  console.log("Initial Tasks", state0.tasks);
+  console.log("Initial Values", state0.values);
+
+  graph.invoke({}, config).catch((e) => {
+    console.log("Caught Error");
+  });
   await new Promise((resolve) => setTimeout(resolve, 100));
   const state = await graph.getState(config);
-  console.log("During", state.next);
-  console.log("During", state.tasks);
+  console.log("During Next", state.next);
+  console.log("During Tasks", state.tasks);
+  console.log("During Values", state.values);
 
+  const state2 = await graph.getState(config);
+
+  console.log("Next", state2.next);
+  console.log("Tasks", state2.tasks);
+  console.log("Values", state2.values);
+
+  return;
   await graph.invoke({}, config);
   const newState = await graph.getState(config);
-  console.log("After", newState.next);
-  console.log("After", newState.tasks);
-  console.log("After", newState.values);
+  console.log("After Next", newState.next);
+  console.log("After Tasks", newState.tasks);
+  console.log("After Values", newState.values);
 
   // First invocation
   // const stream = await graph.stream({}, {

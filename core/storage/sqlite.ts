@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import type { TAnnotation, TAssistant, TSavedThread } from "../types.ts";
+import type { TAnnotation, TAssistant, TThread } from "../types.ts";
 import type { AppStorage, ThreadFilter } from "./types.ts";
 
 /**
@@ -133,8 +133,8 @@ export class SQLiteAppStorage<
 
     // Thread operations
     async createThread(
-        thread: TSavedThread<TState>,
-    ): Promise<TSavedThread<TState>> {
+        thread: TThread<TState>,
+    ): Promise<TThread<TState>> {
         const stmt = this.db.prepare(`
       INSERT INTO threads (id, assistant_id, created_at, updated_at, thread_values)
       VALUES ($id, $assistant_id, $created_at, $updated_at, $values)
@@ -151,7 +151,7 @@ export class SQLiteAppStorage<
         return thread;
     }
 
-    async getThread(id: string): Promise<TSavedThread<TState> | undefined> {
+    async getThread(id: string): Promise<TThread<TState> | undefined> {
         const row = this.db.prepare(`
       SELECT * FROM threads WHERE id = $id
     `).get({ $id: id }) as any;
@@ -169,7 +169,7 @@ export class SQLiteAppStorage<
         };
     }
 
-    async listThreads(filter?: ThreadFilter): Promise<TSavedThread<TState>[]> {
+    async listThreads(filter?: ThreadFilter): Promise<TThread<TState>[]> {
         let query = "SELECT * FROM threads";
         const params: any = {};
         const conditions: string[] = [];
@@ -208,8 +208,8 @@ export class SQLiteAppStorage<
 
     async updateThread(
         id: string,
-        updates: Partial<TSavedThread<TState>>,
-    ): Promise<TSavedThread<TState> | undefined> {
+        updates: Partial<TThread<TState>>,
+    ): Promise<TThread<TState> | undefined> {
         const current = await this.getThread(id);
         if (!current) return undefined;
 

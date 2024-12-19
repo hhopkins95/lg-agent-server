@@ -3,8 +3,8 @@ import type {
   TAnnotation,
   TAssistant,
   TGraphDef,
-  TSavedThread,
   TStreamYield,
+  TThread,
   TThreadState,
 } from "./types.ts";
 import type { AppStorage, ThreadFilter } from "./storage/types.ts";
@@ -194,7 +194,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   // Thread Management Methods
   protected async mergeThreadStates({ threadId, savedState }: {
     threadId: string;
-    savedState?: TSavedThread<TGraph["state_annotation"]>;
+    savedState?: TThread<TGraph["state_annotation"]>;
   }): Promise<TThreadState<TGraph["state_annotation"]>> {
     const curSaved = savedState ?? (await this.getThread(threadId));
     if (!curSaved) {
@@ -205,7 +205,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       configurable: { threadId: threadId },
     });
 
-    checkpointed_state.createdAt
+    checkpointed_state.createdAt;
 
     if (checkpointed_state) {
       return {
@@ -213,12 +213,12 @@ export class GraphStateManager<TGraph extends TGraphDef> {
         status: "interrupted",
         values: checkpointed_state,
       };
-    
 
-   return {
-      ...curSaved,
-      status: "running",
-    };
+      return {
+        ...curSaved,
+        status: "running",
+      };
+    }
   }
 
   async listThreads(
@@ -233,8 +233,8 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   }
 
   async createThread(
-    data?: Partial<TSavedThread<TGraph["state_annotation"]>>,
-  ): Promise<TSavedThread<TGraph["state_annotation"]>> {
+    data?: Partial<TThread<TGraph["state_annotation"]>>,
+  ): Promise<TThread<TGraph["state_annotation"]>> {
     let assistant_id = data?.assistant_id;
     if (!assistant_id) {
       const defaultAssistant = await this.getDefaultAssistant();
@@ -256,7 +256,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
   async getThread(
     threadId: string,
-  ): Promise<TSavedThread<TGraph["state_annotation"]> | undefined> {
+  ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
     // First try to get from checkpointer if available
     if (this.checkpointer) {
       try {
@@ -343,7 +343,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
 
     // Get the thread that will be used on this run
-    let thread: TSavedThread<TGraph["state_annotation"]> | undefined;
+    let thread: TThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
       thread = await this.getThread(threadId);
     }
@@ -395,7 +395,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
 
     // Get the thread that will be used on this run
-    let thread: TSavedThread<TGraph["state_annotation"]> | undefined;
+    let thread: TThread<TGraph["state_annotation"]> | undefined;
     if (threadId) {
       thread = await this.getThread(threadId);
     }

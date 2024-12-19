@@ -1,5 +1,5 @@
 import type { TAnnotation } from "@/lib/utils/type-helpers";
-import type { TAssistant, TGraphDef, TSavedThread } from "@/core/types.ts";
+import type { TAssistant, TGraphDef, TThread } from "@/core/types.ts";
 import { GraphStateManager } from "@/core/graph.ts";
 import { FileSystemStore } from "@/core/storage/filesystem.ts";
 import { InMemoryStore } from "@/core/storage/index.ts";
@@ -47,7 +47,7 @@ class GraphRegistry {
     }
 
     let assistantStore: DataStore<TAssistant<TConfig>>;
-    let threadStore: DataStore<TSavedThread<TState>>;
+    let threadStore: DataStore<TThread<TState>>;
 
     if (dataPath) {
       // Create filesystem stores
@@ -55,13 +55,13 @@ class GraphRegistry {
         `${dataPath}/assistants`,
       );
 
-      threadStore = new FileSystemStore<TSavedThread<TState>>(
+      threadStore = new FileSystemStore<TThread<TState>>(
         `${dataPath}/threads`,
       );
     } else {
       // Create in-memory stores
       assistantStore = new InMemoryStore<TAssistant<TConfig>>();
-      threadStore = new InMemoryStore<TSavedThread<TState>>();
+      threadStore = new InMemoryStore<TThread<TState>>();
     }
 
     const manager = new GraphStateManager({
