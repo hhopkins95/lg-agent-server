@@ -1,4 +1,4 @@
-import type { TInterrupt } from "@/lib/utils/interruptGraph";
+import type { TInterrupt } from "@/lib/utils/interrupt-graph";
 import type {
   AIMessageChunk,
   ToolMessageChunk,
@@ -74,20 +74,19 @@ export type TSavedThread<TState extends TAnnotation> = {
   values?: TState["State"]; // current state values
 };
 
-export type TThreadState<TState extends TAnnotation = TAnnotation> =
-  | TSavedThread<TState>
-    & {
-      status: "idle" | "running";
-    }
-  | {
-    status: "interrupted";
-    pending_interrupt: TInterrupt;
-  }
-  | {
-    status: "error";
-    error: string;
-  };
+export type TThreadStatus = {
+  status: "idle" | "running";
+} | {
+  status: "interrupted";
+  pending_interrupt: TInterrupt;
+} | {
+  status: "error";
+  error: string;
+};
 
+export type TThreadState<TState extends TAnnotation = TAnnotation> =
+  & TSavedThread<TState>
+  & TThreadStatus;
 /**
 Stream Response
 */

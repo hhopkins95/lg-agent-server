@@ -5,14 +5,20 @@ import type {
   TGraphDef,
   TSavedThread,
   TStreamYield,
+  TThreadState,
 } from "./types.ts";
-import type { AppStorage } from "./storage/types.ts";
+import type { AppStorage, ThreadFilter } from "./storage/types.ts";
 import type {
   AIMessageChunk,
   ToolMessageChunk,
 } from "@langchain/core/messages";
-import { type BaseCheckpointSaver, MemorySaver } from "@langchain/langgraph";
+import {
+  type BaseCheckpointSaver,
+  Command,
+  MemorySaver,
+} from "@langchain/langgraph";
 import { SQLiteAppStorage } from "./storage/sqlite.ts";
+import type { TInterrupt } from "@/lib/utils/interrupt-graph.ts";
 
 /**
  * TODO :
@@ -99,6 +105,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     this.graphConfig = graphConfig;
     this.appStorage = appStorage ?? new SQLiteAppStorage(":memory:");
     this.checkpointer = checkpointer ?? new MemorySaver();
+    this.graphConfig.graph.checkpointer = this.checkpointer;
   }
 
   /**
@@ -180,15 +187,49 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     return this.appStorage.updateAssistant(id, updates);
   }
 
-  // Thread Management Methods
-  async listAllThreads(): Promise<TSavedThread<TGraph["state_annotation"]>[]> {
-    return await this.appStorage.listThreads();
+  async deleteAssistant(id: string): Promise<boolean> {
+    return this.appStorage.deleteAssistant(id);
   }
 
-  async listThreadsByAssistant(
-    assistantId: string,
-  ): Promise<TSavedThread<TGraph["state_annotation"]>[]> {
-    return await this.appStorage.listThreads({ assistant_id: assistantId });
+  // Thread Management Methods
+  protected async mergeThreadStates({ threadId, savedState }: {
+    threadId: string;
+    savedState?: TSavedThread<TGraph["state_annotation"]>;
+  }): Promise<TThreadState<TGraph["state_annotation"]>> {
+    const curSaved = savedState ?? (await this.getThread(threadId));
+    if (!curSaved) {
+      throw new Error("No current state found");
+    }
+
+    const checkpointed_state = await this.graphConfig.graph.getState({
+      configurable: { threadId: threadId },
+    });
+
+    checkpointed_state.createdAt
+
+    if (checkpointed_state) {
+      return {
+        ...curSaved,
+        status: "interrupted",
+        values: checkpointed_state,
+      };
+    
+
+   return {
+      ...curSaved,
+      status: "running",
+    };
+  }
+
+  async listThreads(
+    filter?: ThreadFilter,
+  ): Promise<TThreadState<TGraph["state_annotation"]>[]> {
+    const threads = (await this.appStorage.listThreads(filter)).map(
+      (thread) => {
+        return this.mergeThreadStates({ threadId: thread.id });
+      },
+    );
+    return threads;
   }
 
   async createThread(
@@ -208,7 +249,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       assistant_id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      status: "idle",
+      // status: "",
       ...data,
     });
   }
@@ -242,34 +283,6 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     return await this.appStorage.getThread(threadId);
   }
 
-  async updateThread(
-    threadId: string,
-    updates: Partial<TSavedThread<TGraph["state_annotation"]>>,
-  ): Promise<TSavedThread<TGraph["state_annotation"]> | undefined> {
-    return this.appStorage.updateThread(threadId, updates);
-  }
-
-  async getThreadState(
-    threadId: string,
-  ): Promise<TGraph["state_annotation"]["State"] | undefined> {
-    // First try to get from checkpointer if available
-    if (this.checkpointer) {
-      try {
-        // TODO: Implement checkpointer.get
-        // const checkpoint = await this.checkpointer.get(threadId);
-        // if (checkpoint) {
-        //   return checkpoint.state;
-        // }
-      } catch (error) {
-        console.error("Error getting checkpoint state:", error);
-      }
-    }
-
-    // Fall back to app storage
-    const thread = await this.appStorage.getThread(threadId);
-    return thread?.values;
-  }
-
   private async saveThreadState(
     threadId: string,
     state: TGraph["state_annotation"]["State"],
@@ -288,6 +301,19 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     await this.appStorage.updateThread(threadId, {
       values: state,
       updated_at: new Date().toISOString(),
+    });
+  }
+
+  /*
+  Invocations
+  */
+  async resumeThreadFromInterrupt(
+    { threadId, val }: { threadId: string; val: unknown },
+  ) {
+    await this.graphConfig.graph.invoke(new Command({ resume: val }), {
+      configurable: {
+        thread_id: threadId,
+      },
     });
   }
 
@@ -343,7 +369,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
     return res;
   }
-
+  // Needs update
   async *streamGraph({
     assistantId,
     threadId,
@@ -411,6 +437,10 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
     // Yield each state update
     for await (const [eventType, data] of stream) {
+      if (eventType == "custom" && data.type == "interrupt") {
+        const interruptData = data.data as TInterrupt;
+      }
+
       // full state update event
       if (eventType == "values") {
         let _data = data as TGraph["state_annotation"]["State"];
@@ -418,9 +448,9 @@ export class GraphStateManager<TGraph extends TGraphDef> {
         const state = await this.getThreadState(thread!.id);
         // console.log("State Update : ", _data);
         if (state) {
-          yield {
-            full_state_update: state,
-          };
+          // yield {
+          //   full_state_update: state,
+          // };
         }
       }
 

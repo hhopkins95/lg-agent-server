@@ -70,6 +70,14 @@ async function callModel(
     typeof GraphConfigurationAnnotation.State
   >,
 ): Promise<typeof GraphStateAnnotation.Update> {
+  console.log("starting wait");
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.log("ending wait");
+  return {
+    count: state.count + 1,
+    messages: state.messages,
+  };
+
   const c = ensureGraphConfiguration(runnableConfig, defaultConfig); // if c is not defined, create it with defaults
   const llm = getLLM(c.model!); // .bindTools(tools);
   console.log("Interrupting graph...");
@@ -100,6 +108,7 @@ const router = (state: typeof GraphStateAnnotation.State) => {
   const { messages } = state;
   const lastMessage = messages[messages.length - 1];
   if (
+    lastMessage &&
     "tool_calls" in lastMessage && Array.isArray(lastMessage.tool_calls) &&
     lastMessage.tool_calls?.length
   ) {
@@ -147,10 +156,9 @@ export const GraphDefinition = CreateGraphDef({
 });
 
 import fs from "node:fs/promises";
-
 import Database from "bun:sqlite";
 import { BunSqliteSaver } from "@/lib/checkpointers/bun-sqlite";
-import { interruptGraph } from "@/lib/utils/interruptGraph";
+import { interruptGraph } from "@/lib/utils/interrupt-graph";
 
 const main = async () => {
   const db_path = __dirname + "/test.db";
@@ -158,19 +166,31 @@ const main = async () => {
   graph.checkpointer = cp; // MemorySaver();
 
   const config = {
-    configurable: { thread_id: "abc", model: "qwen2_5__05b" as const },
+    configurable: { thread_id: "abcd", model: "qwen2_5__05b" as const },
   };
 
-  // First invocation
-  const stream = await graph.stream({}, {
-    ...config,
-    streamMode: ["custom"],
-  });
+  graph.invoke({}, config);
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  const state = await graph.getState(config);
+  console.log("During", state.next);
+  console.log("During", state.tasks);
 
-  for await (const [eventType, data] of stream) {
-    console.log("EVENT", eventType);
-    console.log("DATA", data);
-  }
+  await graph.invoke({}, config);
+  const newState = await graph.getState(config);
+  console.log("After", newState.next);
+  console.log("After", newState.tasks);
+  console.log("After", newState.values);
+
+  // First invocation
+  // const stream = await graph.stream({}, {
+  //   ...config,
+  //   streamMode: ["custom"],
+  // });
+
+  // for await (const [eventType, data] of stream) {
+  //   console.log("EVENT", eventType);
+  //   console.log("DATA", data);
+  // }
   return;
   await graph.invoke({}, config);
   await graph.invoke(
@@ -193,4 +213,4 @@ const printGraphState = async (
   });
 };
 
-// main();
+main();
