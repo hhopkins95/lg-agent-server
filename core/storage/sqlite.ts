@@ -35,6 +35,7 @@ export class SQLiteAppStorage<
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         thread_values TEXT,
+        status TEXT NOT NULL,
         FOREIGN KEY(assistant_id) REFERENCES assistants(id) ON DELETE SET NULL
       )
     `);
@@ -136,8 +137,8 @@ export class SQLiteAppStorage<
         thread: TThread<TState>,
     ): Promise<TThread<TState>> {
         const stmt = this.db.prepare(`
-      INSERT INTO threads (id, assistant_id, created_at, updated_at, thread_values)
-      VALUES ($id, $assistant_id, $created_at, $updated_at, $values)
+      INSERT INTO threads (id, assistant_id, created_at, updated_at, thread_values, status)
+      VALUES ($id, $assistant_id, $created_at, $updated_at, $values, $status)
     `);
 
         stmt.run({
@@ -146,6 +147,7 @@ export class SQLiteAppStorage<
             $created_at: thread.created_at,
             $updated_at: thread.updated_at,
             $values: thread.values ? JSON.stringify(thread.values) : null,
+            $status: JSON.stringify(thread.status),
         });
 
         return thread;
@@ -166,6 +168,7 @@ export class SQLiteAppStorage<
             values: row.thread_values
                 ? JSON.parse(row.thread_values)
                 : undefined,
+            status: JSON.parse(row.status),
         };
     }
 
@@ -178,6 +181,10 @@ export class SQLiteAppStorage<
             if (filter.assistant_id) {
                 conditions.push("assistant_id = $assistant_id");
                 params.$assistant_id = filter.assistant_id;
+            }
+            if (filter.status) {
+                conditions.push("json_extract(status, '$.status') = $status");
+                params.$status = filter.status;
             }
             if (filter.created_after) {
                 conditions.push("created_at > $created_after");
@@ -203,6 +210,7 @@ export class SQLiteAppStorage<
             values: row.thread_values
                 ? JSON.parse(row.thread_values)
                 : undefined,
+            status: JSON.parse(row.status),
         }));
     }
 
@@ -218,7 +226,8 @@ export class SQLiteAppStorage<
       UPDATE threads 
       SET assistant_id = $assistant_id,
           updated_at = $updated_at,
-          thread_values = $values
+          thread_values = $values,
+          status = $status
       WHERE id = $id
     `);
 
@@ -227,6 +236,7 @@ export class SQLiteAppStorage<
             $assistant_id: updated.assistant_id || null,
             $updated_at: updated.updated_at,
             $values: updated.values ? JSON.stringify(updated.values) : null,
+            $status: JSON.stringify(updated.status),
         });
 
         return updated;

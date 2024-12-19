@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { SQLiteAppStorage } from "../storage/sqlite.ts";
 import { Annotation } from "@langchain/langgraph";
-import type { TAssistant, TThread } from "../types.ts";
+import type { TAssistant, TThread, TThreadStatus } from "../types.ts";
 
 describe("SQLiteAppStorage", () => {
   let storage: SQLiteAppStorage;
@@ -38,7 +38,7 @@ describe("SQLiteAppStorage", () => {
     assistant_id: "test_assistant",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    status: "idle",
+    status: { status: "idle" },
     values: {
       messages: ["Hello"],
       context: { key: "value" },
@@ -107,7 +107,7 @@ describe("SQLiteAppStorage", () => {
       const thread2 = {
         ...testThread,
         id: "test_thread_2",
-        status: "busy" as const,
+        status: { status: "running" } satisfies TThreadStatus,
       };
       await storage.createThread(thread2);
 
@@ -118,15 +118,15 @@ describe("SQLiteAppStorage", () => {
       expect(assistantThreads).toHaveLength(2);
 
       // Test filtering by status
-      const busyThreads = await storage.listThreads({ status: "busy" });
-      expect(busyThreads).toHaveLength(1);
-      expect(busyThreads[0].id).toBe(thread2.id);
+      const runningThreads = await storage.listThreads({ status: "running" });
+      expect(runningThreads).toHaveLength(1);
+      expect(runningThreads[0].id).toBe(thread2.id);
     });
 
     it("should update a thread", async () => {
       await storage.createThread(testThread);
       const updates = {
-        status: "busy" as const,
+        status: { status: "running" } satisfies TThreadStatus,
         values: {
           messages: ["Hello", "World"],
           context: { key: "new_value" },
@@ -135,9 +135,46 @@ describe("SQLiteAppStorage", () => {
 
       const updated = await storage.updateThread(testThread.id, updates);
       expect(updated).toBeDefined();
-      expect(updated!.status).toBe(updates.status);
+      expect(updated!.status).toEqual(updates.status);
       expect(updated!.values).toEqual(updates.values);
     });
+
+    it("should handle error status", async () => {
+      const errorThread = {
+        ...testThread,
+        id: "error_thread",
+        status: {
+          status: "error",
+          error: "Test error message",
+        } satisfies TThreadStatus,
+      };
+
+      const created = await storage.createThread(errorThread);
+      expect(created).toEqual(errorThread);
+
+      const retrieved = await storage.getThread(errorThread.id);
+      expect(retrieved).toEqual(errorThread);
+    });
+
+    // Commenting out interrupted test until we have access to TInterrupt type
+    // it("should handle interrupted status", async () => {
+    //   const interruptedThread = {
+    //     ...testThread,
+    //     id: "interrupted_thread",
+    //     status: {
+    //       status: "interrupted",
+    //       pending_interrupt: {
+    //         // Need proper TInterrupt type here
+    //       }
+    //     } satisfies TThreadStatus,
+    //   };
+
+    //   const created = await storage.createThread(interruptedThread);
+    //   expect(created).toEqual(interruptedThread);
+
+    //   const retrieved = await storage.getThread(interruptedThread.id);
+    //   expect(retrieved).toEqual(interruptedThread);
+    // });
 
     it("should delete a thread", async () => {
       await storage.createThread(testThread);

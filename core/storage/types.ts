@@ -1,11 +1,16 @@
-import type { TAnnotation, TAssistant, TThread } from "../types.ts";
+import type {
+    TAnnotation,
+    TAssistant,
+    TThread,
+    TThreadStatus,
+} from "../types.ts";
 
 /**
  * Filter type for querying threads
  */
 export type ThreadFilter = {
     assistant_id?: string;
-    status?: "idle" | "busy" | "interrupted" | "error";
+    status?: TThreadStatus["status"];
     created_before?: string;
     created_after?: string;
 };
