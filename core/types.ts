@@ -103,7 +103,8 @@ export type LLMStreamMeta = {
   langgraph_step?: number;
 };
 export type TStreamYield<TGraph extends TGraphDef> = {
-  full_state_update?: TThread<TGraph["state_annotation"]>;
+  full_state_update?: TThread<TGraph["state_annotation"]>["values"];
+  status_change?: TThread<TGraph["state_annotation"]>["status"];
   state_llm_stream_data?: {
     key: TGraph extends TGraphDef<any, any, infer K, any> ? K : never;
     chunk: AIMessageChunk | ToolMessageChunk;

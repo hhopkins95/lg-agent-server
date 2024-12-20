@@ -279,7 +279,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   }
 
   // Keep existing invoke and stream implementations
-  private async invokeGraph({
+  async invokeGraph({
     state,
     resumeValue,
     assistant_id,
@@ -310,10 +310,20 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     const invokeVal = state ?? new Command({ resume: resumeValue }); // TODO -- resumeValue
 
     try {
+      if (thread_id) {
+        await this.updateThread(thread_id, {
+          status: {
+            status: "running",
+          },
+        });
+      }
       const res = await this.graphConfig.graph.invoke(invokeVal, invokeConfig);
       if (thread_id) {
         await this.updateThread(thread_id, {
           values: res,
+          status: {
+            status: "idle",
+          },
         });
       }
       return { success: true, values: res };
@@ -340,69 +350,46 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
   }
   // Needs update
-  private async *streamGraph({
-    assistantId,
-    threadId,
+  async *streamGraph({
     state,
+    resumeValue,
+    assistant_id,
+    thread_id,
     config,
   }: {
-    assistantId?: string;
-    threadId?: string;
-    shouldCreateThread?: boolean;
     state?: TGraph["state_annotation"]["State"];
-    config?: TGraph["config_annotation"]["State"];
-  }): AsyncGenerator<TStreamYield<TGraph>> {
+    resumeValue?: unknown;
+  } & TGetRunConfigParams<typeof this.graphConfig>): AsyncGenerator<
+    TStreamYield<TGraph>
+  > {
+    if ((!resumeValue && !state) || (resumeValue && state)) {
+      throw new Error("Exactly one of state or resumeValue must be provided");
+    }
+
     // Get the assistant that will be used on this run
-    let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
-    if (!assistantId) {
-      assistant = await this.getAssistant(DEFAULT_ASSISTANT_ID);
-    } else {
-      assistant = await this.getAssistant(assistantId);
-    }
-    if (!assistant) {
-      throw new Error(`Assistant ${assistantId} not found`);
-    }
 
-    // Get the thread that will be used on this run
-    let thread: TThread<TGraph["state_annotation"]> | undefined;
-    if (threadId) {
-      thread = await this.getThread(threadId);
-    }
-    if (shouldCreateThread && !thread) {
-      thread = await this.createThread();
-    }
-
-    // Get the state / config for this run
-    const invokeState = state ?? thread?.values ??
-      this.graphConfig.default_state;
-    const invokeConfig = config ?? assistant.config ??
-      this.graphConfig.default_config;
-
-    // Use the graph's stream method instead of invoke
-    const stream = await this.graphConfig.graph.stream({ ...invokeState }, {
-      configurable: {
-        ...invokeConfig,
-      },
-      streamMode: ["values", "messages", "custom"],
+    const invokeConfig = await this.getRunConfig({
+      assistant_id,
+      thread_id,
+      config,
     });
 
-    let finalState: TGraph["state_annotation"]["State"] | undefined;
+    // Get the state / config for this run
+    const invokeVal = state ?? new Command({ resume: resumeValue });
 
-    // Helper to check if the meta tags of the chunk match any of the stream keys
-    const getStreamKeyFromMetaTags = <T>(
-      keys: T[] | undefined,
-      tags: string[] | undefined,
-    ): T | undefined => {
-      if (!keys) return undefined;
-      if (!tags) return undefined;
+    // Use the graph's stream method instead of invoke
+    const stream = await this.graphConfig.graph.stream(invokeVal, {
+      streamMode: ["values", "messages", "custom"],
+      ...invokeConfig,
+    });
 
-      for (const key of keys) {
-        if (tags.includes(key as string)) {
-          return key as T;
-        }
-      }
-      return undefined;
-    };
+    if (thread_id) {
+      await this.updateThread(thread_id, {
+        status: {
+          status: "running",
+        },
+      });
+    }
 
     // Yield each state update
     for await (const [eventType, data] of stream) {
@@ -413,13 +400,13 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       // full state update event
       if (eventType == "values") {
         let _data = data as TGraph["state_annotation"]["State"];
-        finalState = _data;
-        const state = await this.getThreadState(thread!.id);
-        // console.log("State Update : ", _data);
-        if (state) {
-          // yield {
-          //   full_state_update: state,
-          // };
+        if (thread_id) {
+          await this.updateThread(thread_id, {
+            values: _data,
+          });
+          yield {
+            full_state_update: state,
+          };
         }
       }
 
@@ -466,10 +453,21 @@ export class GraphStateManager<TGraph extends TGraphDef> {
         }
       }
     }
-
-    // Save the final state to the thread
-    if (thread && finalState) {
-      await this.saveThreadState(thread.id, finalState);
-    }
   }
 }
+
+// Helper to check if the meta tags of the chunk match any of the stream keys
+const getStreamKeyFromMetaTags = <T>(
+  keys: T[] | undefined,
+  tags: string[] | undefined,
+): T | undefined => {
+  if (!keys) return undefined;
+  if (!tags) return undefined;
+
+  for (const key of keys) {
+    if (tags.includes(key as string)) {
+      return key as T;
+    }
+  }
+  return undefined;
+};
