@@ -162,8 +162,18 @@ const main = async () => {
   graph.checkpointer = cp; // MemorySaver();
 
   const config = {
-    configurable: { thread_id: "abcde", model: "qwen2_5__05b" as const },
+    configurable: { thread_id: "abcdefe", model: "qwen2_5__05b" as const },
   };
+
+  await graph.invoke(new Command({ resume: "Hello" }), config).catch((e) => {
+    console.log("Error", e);
+  });
+
+  const state = await graph.getState(config);
+  console.log("Next", state.next);
+  console.log("Tasks", state.tasks);
+
+  return;
 
   const state0 = await graph.getState(config);
   console.log("Initial Next", state0.next);
@@ -174,10 +184,10 @@ const main = async () => {
     console.log("Caught Error");
   });
   await new Promise((resolve) => setTimeout(resolve, 100));
-  const state = await graph.getState(config);
-  console.log("During Next", state.next);
-  console.log("During Tasks", state.tasks);
-  console.log("During Values", state.values);
+  // const state = await graph.getState(config);
+  // console.log("During Next", state.next);
+  // console.log("During Tasks", state.tasks);
+  // console.log("During Values", state.values);
 
   const state2 = await graph.getState(config);
 
