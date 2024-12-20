@@ -2,10 +2,10 @@ import type {
   LLMStreamMeta,
   TAnnotation,
   TAssistant,
+  TGetRunConfigParams,
   TGraphDef,
   TStreamYield,
   TThread,
-  TThreadState,
 } from "./types.ts";
 import type { AppStorage, ThreadFilter } from "./storage/types.ts";
 import type {
@@ -19,6 +19,8 @@ import {
 } from "@langchain/langgraph";
 import { SQLiteAppStorage } from "./storage/sqlite.ts";
 import type { TInterrupt } from "@/lib/utils/interrupt-graph.ts";
+import { DEFAULT_ASSISTANT_ID } from "./constants.ts";
+import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
 
 /**
  * TODO :
@@ -126,7 +128,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     if (this.graphConfig.default_config) {
       const config = this.graphConfig.default_config;
       all_assistants.push({
-        id: "__DEFAULT__",
+        id: DEFAULT_ASSISTANT_ID,
         graph_name: this.graphConfig.name,
         description: `Default configuration for ${this.graphConfig.name}`,
         config,
@@ -154,12 +156,6 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     id: string,
   ): Promise<TAssistant<TGraph["config_annotation"]> | undefined> {
     return await this.appStorage.getAssistant(id);
-  }
-
-  async getDefaultAssistant(): Promise<
-    TAssistant<TGraph["config_annotation"]> | undefined
-  > {
-    return await this.appStorage.getAssistant("__DEFAULT__");
   }
 
   async listAllAssistants(): Promise<
@@ -191,189 +187,162 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     return this.appStorage.deleteAssistant(id);
   }
 
-  // Thread Management Methods
-  protected async mergeThreadStates({ threadId, savedState }: {
-    threadId: string;
-    savedState?: TThread<TGraph["state_annotation"]>;
-  }): Promise<TThreadState<TGraph["state_annotation"]>> {
-    const curSaved = savedState ?? (await this.getThread(threadId));
-    if (!curSaved) {
-      throw new Error("No current state found");
-    }
-
-    const checkpointed_state = await this.graphConfig.graph.getState({
-      configurable: { threadId: threadId },
-    });
-
-    checkpointed_state.createdAt;
-
-    if (checkpointed_state) {
-      return {
-        ...curSaved,
-        status: "interrupted",
-        values: checkpointed_state,
-      };
-
-      return {
-        ...curSaved,
-        status: "running",
-      };
-    }
-  }
-
-  async listThreads(
-    filter?: ThreadFilter,
-  ): Promise<TThreadState<TGraph["state_annotation"]>[]> {
-    const threads = (await this.appStorage.listThreads(filter)).map(
-      (thread) => {
-        return this.mergeThreadStates({ threadId: thread.id });
-      },
-    );
-    return threads;
-  }
+  // Thread Management
+  listThreads = (filter?: ThreadFilter) => this.appStorage.listThreads(filter);
+  getThread = (id: string) => this.appStorage.getThread(id);
 
   async createThread(
-    data?: Partial<TThread<TGraph["state_annotation"]>>,
+    assistant_id: string,
   ): Promise<TThread<TGraph["state_annotation"]>> {
-    let assistant_id = data?.assistant_id;
-    if (!assistant_id) {
-      const defaultAssistant = await this.getDefaultAssistant();
-      if (!defaultAssistant) {
-        throw new Error("No default assistant found");
-      }
-      assistant_id = defaultAssistant.id;
+    // make sure the assistant exists
+    const assistant = await this.appStorage.getAssistant(assistant_id);
+    if (!assistant) {
+      throw new Error(`Assistant ${assistant_id} not found`);
     }
-
     return await this.appStorage.createThread({
       id: `thread_${crypto.randomUUID()}`,
       assistant_id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      // status: "",
-      ...data,
+      values: this.graphConfig.default_state,
+      status: {
+        status: "idle",
+      },
     });
   }
 
-  async getThread(
+  private async updateThread(
     threadId: string,
-  ): Promise<TThread<TGraph["state_annotation"]> | undefined> {
-    // First try to get from checkpointer if available
-    if (this.checkpointer) {
-      try {
-        const cur = await this.graphConfig.graph.getState({
-          configurable: { threadId: threadId },
-        });
-        // TODO: Implement checkpointer.get
-        // const checkpoint = await this.checkpointer.get(threadId);
-        // if (checkpoint) {
-        //   return {
-        //     id: threadId,
-        //     status: "interrupted",
-        //     values: checkpoint.state,
-        //     created_at: new Date(checkpoint.timestamp).toISOString(),
-        //     updated_at: new Date(checkpoint.timestamp).toISOString(),
-        //   };
-        // }
-      } catch (error) {
-        console.error("Error getting checkpoint:", error);
-      }
-    }
-
-    // Fall back to app storage
-    return await this.appStorage.getThread(threadId);
-  }
-
-  private async saveThreadState(
-    threadId: string,
-    state: TGraph["state_annotation"]["State"],
-  ): Promise<void> {
-    // Save to checkpointer if available
-    if (this.checkpointer) {
-      try {
-        // TODO: Implement checkpointer.put
-        // await this.checkpointer.put(threadId, state);
-      } catch (error) {
-        console.error("Error saving checkpoint:", error);
-      }
-    }
-
+    values: Partial<Omit<TThread<TGraph["state_annotation"]>, "id">>,
+  ): Promise<TThread<TGraph["state_annotation"]>> {
     // Always save to app storage
-    await this.appStorage.updateThread(threadId, {
-      values: state,
+    const res = await this.appStorage.updateThread(threadId, {
+      ...values,
       updated_at: new Date().toISOString(),
     });
+    if (!res) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    return res;
   }
 
   /*
   Invocations
   */
-  async resumeThreadFromInterrupt(
-    { threadId, val }: { threadId: string; val: unknown },
-  ) {
-    await this.graphConfig.graph.invoke(new Command({ resume: val }), {
+
+  /**
+   * Get's the configuration for a run of the graph depending on the passed parameters
+   */
+  private async getRunConfig({
+    assistant_id,
+    thread_id,
+    config,
+  }: TGetRunConfigParams<typeof this.graphConfig>) {
+    let assistant: TAssistant<TGraph["config_annotation"]> | undefined =
+      await this.appStorage.getAssistant(assistant_id ?? DEFAULT_ASSISTANT_ID);
+
+    if (!assistant) {
+      throw new Error(`Cannot find assistant for run`);
+    }
+    return {
       configurable: {
-        thread_id: threadId,
+        ...assistant.config,
+        ...config,
+        thread_id,
       },
+    };
+  }
+
+  async resumeThreadFromInterrupt(
+    { thread_id, val, stream = false, config }: {
+      thread_id: string;
+      val: unknown;
+      stream?: boolean;
+      config?: Partial<TGraph["config_annotation"]["State"]>;
+    },
+  ) {
+    const thread = await this.getThread(thread_id);
+    if (!thread) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    if (thread.status.status !== "interrupted") {
+      throw new Error(`Thread ${threadId} is not in an interrupted state`);
+    }
+    const runConfig = await this.getRunConfig({
+      thread_id,
+      config,
     });
+    await this.graphConfig.graph.invoke(
+      new Command({ resume: val }),
+      runConfig,
+    );
   }
 
   // Keep existing invoke and stream implementations
-  async invokeGraph({
-    assistantId,
-    threadId,
-    shouldCreateThread,
+  private async invokeGraph({
     state,
+    resumeValue,
+    assistant_id,
+    thread_id,
     config,
   }: {
-    assistantId?: string;
-    threadId?: string;
-    shouldCreateThread?: boolean;
     state?: TGraph["state_annotation"]["State"];
-    config?: TGraph["config_annotation"]["State"];
-  }): Promise<TGraph["state_annotation"]["State"]> {
-    // Get the assistant that will be used on this run
-    let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
-    if (!assistantId) {
-      assistant = await this.getDefaultAssistant();
-    } else {
-      assistant = await this.getAssistant(assistantId);
+    resumeValue?: unknown;
+  } & TGetRunConfigParams<typeof this.graphConfig>): Promise<
+    { success: true; values: TGraph["state_annotation"]["State"] } | {
+      success: false;
+      values?: TGraph["state_annotation"]["State"];
+      error: string;
     }
-    if (!assistant) {
-      throw new Error(`Assistant ${assistantId} not found`);
+  > {
+    if ((!resumeValue && !state) || (resumeValue && state)) {
+      throw new Error("Exactly one of state or resumeValue must be provided");
     }
 
-    // Get the thread that will be used on this run
-    let thread: TThread<TGraph["state_annotation"]> | undefined;
-    if (threadId) {
-      thread = await this.getThread(threadId);
-    }
-    if (shouldCreateThread && !thread) {
-      thread = await this.createThread();
-    }
+    // Get the assistant that will be used on this run
+    const invokeConfig = await this.getRunConfig({
+      assistant_id,
+      thread_id,
+      config,
+    });
 
     // Get the state / config for this run
-    const invokeState = state ?? thread?.values ??
-      this.graphConfig.default_state;
+    const invokeVal = state ?? new Command({ resume: resumeValue }); // TODO -- resumeValue
 
-    const invokeConfig = config ?? assistant.config ??
-      this.graphConfig.default_config;
+    try {
+      const res = await this.graphConfig.graph.invoke(invokeVal, invokeConfig);
+      if (thread_id) {
+        await this.updateThread(thread_id, {
+          values: res,
+        });
+      }
+      return { success: true, values: res };
+    } catch (e) {
+      let latest_values: TGraph["state_annotation"]["State"] | undefined;
+      if (thread_id) {
+        // get latest state from the run via checkpointer
+        latest_values =
+          (await (this.graphConfig.graph.getState(invokeConfig))).values;
 
-    const res = await this.graphConfig.graph.invoke({ update: invokeState }, {
-      configurable: {
-        ...invokeConfig,
-      },
-    });
-    if (thread) {
-      await this.saveThreadState(thread.id, res);
+        // save that to the thread if exists along with the error
+        await this.updateThread(thread_id, {
+          values: latest_values,
+          status: {
+            status: "error",
+            error: (e as Error).message,
+          },
+        });
+      }
+      return {
+        success: false,
+        error: (e as Error).message,
+      };
     }
-
-    return res;
   }
   // Needs update
-  async *streamGraph({
+  private async *streamGraph({
     assistantId,
     threadId,
-    shouldCreateThread,
     state,
     config,
   }: {
@@ -386,7 +355,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     // Get the assistant that will be used on this run
     let assistant: TAssistant<TGraph["config_annotation"]> | undefined;
     if (!assistantId) {
-      assistant = await this.getDefaultAssistant();
+      assistant = await this.getAssistant(DEFAULT_ASSISTANT_ID);
     } else {
       assistant = await this.getAssistant(assistantId);
     }

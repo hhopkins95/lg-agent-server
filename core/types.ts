@@ -85,9 +85,13 @@ export type TThreadStatus = {
   error: string;
 };
 
-// export type TThreadState<TState extends TAnnotation = TAnnotation> =
-//   & TSavedThread<TState>
-//   & TThreadStatus;
+// METHOD TYPES
+export type TGetRunConfigParams<TGraph extends TGraphDef> = {
+  assistant_id?: string;
+  thread_id?: string;
+  config?: TGraph["config_annotation"]["State"];
+};
+
 /**
 Stream Response
 */
