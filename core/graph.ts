@@ -253,29 +253,63 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     };
   }
 
-  async resumeThreadFromInterrupt(
-    { thread_id, val, stream = false, config }: {
-      thread_id: string;
-      val: unknown;
-      stream?: boolean;
-      config?: Partial<TGraph["config_annotation"]["State"]>;
-    },
-  ) {
-    const thread = await this.getThread(thread_id);
-    if (!thread) {
-      throw new Error(`Thread ${thread_id} not found`);
-    }
-    if (thread.status.status !== "interrupted") {
-      throw new Error(`Thread ${thread_id} is not in an interrupted state`);
-    }
-    const runConfig = await this.getRunConfig({
-      thread_id,
-      config,
-    });
-    await this.graphConfig.graph.invoke(
-      new Command({ resume: val }),
-      runConfig,
-    );
+  /**
+   * Resumes execution of a thread from an interrupted state
+   * @param thread_id - ID of the thread to resume
+   * @param val - Value to resume with (must match what the interrupt expects)
+   * @param stream - Whether to stream the execution or not
+   * @param config - Additional configuration to merge with assistant config
+   * @returns Either the final state or a stream of updates
+   */
+  resumeThreadFromInterrupt<TReturn extends boolean = false>({
+    thread_id,
+    val,
+    stream = false as TReturn,
+    config,
+  }: {
+    thread_id: string;
+    val: unknown;
+    stream?: TReturn;
+    config?: Partial<TGraph["config_annotation"]["State"]>;
+  }): TReturn extends true ? AsyncGenerator<TStreamYield<TGraph>>
+    : Promise<
+      | { success: true; values: TGraph["state_annotation"]["State"] }
+      | {
+        success: false;
+        values?: TGraph["state_annotation"]["State"];
+        error: string;
+      }
+    > {
+    return (async () => {
+      const thread = await this.getThread(thread_id);
+      if (!thread) {
+        throw new Error(`Thread ${thread_id} not found`);
+      }
+      if (thread.status.status !== "interrupted") {
+        throw new Error(`Thread ${thread_id} is not in an interrupted state`);
+      }
+
+      // Call the appropriate internal method based on stream parameter
+      return stream
+        ? this.streamGraph({
+          thread_id,
+          resumeValue: val,
+          config,
+        })
+        : this.invokeGraph({
+          thread_id,
+          resumeValue: val,
+          config,
+        });
+    })() as TReturn extends true ? AsyncGenerator<TStreamYield<TGraph>>
+      : Promise<
+        | { success: true; values: TGraph["state_annotation"]["State"] }
+        | {
+          success: false;
+          values?: TGraph["state_annotation"]["State"];
+          error: string;
+        }
+      >;
   }
 
   // Keep existing invoke and stream implementations
@@ -350,6 +384,15 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     }
   }
   // Needs update
+  /**
+   * Streams the execution of a graph, yielding state updates, LLM outputs, and status changes
+   * @param state - Initial state to start the graph with
+   * @param resumeValue - Value to resume from an interrupt with
+   * @param assistant_id - ID of the assistant to use
+   * @param thread_id - ID of the thread to update
+   * @param config - Additional configuration to merge with assistant config
+   * @returns AsyncGenerator yielding state updates, LLM chunks, and status changes
+   */
   async *streamGraph({
     state,
     resumeValue,
@@ -366,88 +409,142 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       throw new Error("Exactly one of state or resumeValue must be provided");
     }
 
-    // Get the assistant that will be used on this run
-
-    const invokeConfig = await this.getRunConfig({
-      assistant_id,
-      thread_id,
-      config,
-    });
-
-    // Get the state / config for this run
-    const invokeVal = state ?? new Command({ resume: resumeValue });
-
-    // Use the graph's stream method instead of invoke
-    const stream = await this.graphConfig.graph.stream(invokeVal, {
-      streamMode: ["values", "messages", "custom"],
-      ...invokeConfig,
-    });
-
+    // Prevent concurrent operations on the same thread
     if (thread_id) {
-      await this.updateThread(thread_id, {
-        status: {
-          status: "running",
-        },
-      });
+      const currentThread = await this.getThread(thread_id);
+      if (currentThread?.status.status === "running") {
+        throw new Error(`Thread ${thread_id} is already running`);
+      }
     }
 
-    // Yield each state update
-    for await (const [eventType, data] of stream) {
-      if (eventType == "custom" && data.type == "interrupt") {
-        const interruptData = data.data as TInterrupt;
+    try {
+      const invokeConfig = await this.getRunConfig({
+        assistant_id,
+        thread_id,
+        config,
+      });
+
+      const invokeVal = state ?? new Command({ resume: resumeValue });
+
+      const stream = await this.graphConfig.graph.stream(invokeVal, {
+        streamMode: ["values", "messages", "custom"],
+        ...invokeConfig,
+      });
+
+      if (thread_id) {
+        await this.updateThread(thread_id, {
+          status: {
+            status: "running",
+          },
+        });
       }
 
-      // full state update event
-      if (eventType == "values") {
-        let _data = data as TGraph["state_annotation"]["State"];
-        if (thread_id) {
+      for await (const [eventType, data] of stream) {
+        // Handle interrupts
+        if (eventType === "custom" && data.type === "interrupt") {
+          const interruptData = data.data as TInterrupt;
+          if (thread_id) {
+            await this.updateThread(thread_id, {
+              status: {
+                status: "interrupted",
+                pending_interrupt: interruptData,
+              },
+            });
+            yield {
+              status_change: {
+                status: "interrupted",
+                pending_interrupt: interruptData,
+              },
+            };
+          }
+        }
+
+        // Handle full state updates
+        if (eventType === "values") {
+          const _data = data as TGraph["state_annotation"]["State"];
+          if (thread_id) {
+            await this.updateThread(thread_id, {
+              values: _data,
+            });
+            yield {
+              full_state_update: _data,
+            };
+          }
+        }
+
+        // Handle LLM stream events
+        if (eventType === "messages") {
+          const [chunk, meta] = data as [
+            AIMessageChunk | ToolMessageChunk,
+            LLMStreamMeta,
+          ];
+
+          // Handle state stream keys
+          const state_stream_keys = this.graphConfig.state_llm_stream_keys;
+          const state_key = getStreamKeyFromMetaTags(
+            state_stream_keys,
+            meta.tags,
+          );
+
+          if (state_key) {
+            yield {
+              state_llm_stream_data: {
+                key: state_key as TGraph extends
+                  TGraphDef<any, any, infer K, any> ? K : never,
+                chunk,
+                meta,
+              },
+            };
+            continue;
+          }
+
+          // Handle other stream keys
+          const other_stream_keys = this.graphConfig.other_llm_stream_keys;
+          const other_key = getStreamKeyFromMetaTags(
+            other_stream_keys,
+            meta.tags,
+          );
+
+          if (other_key) {
+            yield {
+              other_llm_stream_data: {
+                key: other_key as TGraph extends
+                  TGraphDef<any, any, any, infer K> ? K : never,
+                chunk,
+                meta,
+              },
+            };
+          }
+        }
+      }
+    } catch (e) {
+      if (thread_id) {
+        await this.updateThread(thread_id, {
+          status: {
+            status: "error",
+            error: (e as Error).message,
+          },
+        });
+        yield {
+          status_change: {
+            status: "error",
+            error: (e as Error).message,
+          },
+        };
+      }
+      throw e;
+    } finally {
+      if (thread_id) {
+        const currentThread = await this.getThread(thread_id);
+        if (currentThread?.status.status !== "interrupted") {
           await this.updateThread(thread_id, {
-            values: _data,
+            status: {
+              status: "idle",
+            },
           });
           yield {
-            full_state_update: state,
-          };
-        }
-      }
-
-      // LLM stream event
-      if (eventType == "messages") {
-        const [chunk, meta] = data as [
-          AIMessageChunk | ToolMessageChunk,
-          LLMStreamMeta,
-        ];
-
-        // Check if the streamed tags match any of the state stream keys
-        const state_stream_keys = this.graphConfig.state_llm_stream_keys;
-        const state_key = getStreamKeyFromMetaTags(
-          state_stream_keys,
-          meta.tags,
-        );
-        if (state_key) {
-          yield {
-            state_llm_stream_data: {
-              // @ts-ignore
-              key: state_key,
-              chunk,
-              meta,
-            },
-          };
-          continue;
-        }
-
-        // Check if the streamed tags match any of the other stream keys
-        const other_stream_keys = this.graphConfig.other_llm_stream_keys;
-        const other_key = getStreamKeyFromMetaTags(
-          other_stream_keys,
-          meta.tags,
-        );
-        if (other_key) {
-          yield {
-            other_llm_stream_data: {
-              // @ts-ignore
-              key: other_key,
-              chunk: chunk,
-              meta,
+            status_change: {
+              status: "idle",
             },
           };
         }
