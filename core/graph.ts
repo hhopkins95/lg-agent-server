@@ -263,10 +263,10 @@ export class GraphStateManager<TGraph extends TGraphDef> {
   ) {
     const thread = await this.getThread(thread_id);
     if (!thread) {
-      throw new Error(`Thread ${threadId} not found`);
+      throw new Error(`Thread ${thread_id} not found`);
     }
     if (thread.status.status !== "interrupted") {
-      throw new Error(`Thread ${threadId} is not in an interrupted state`);
+      throw new Error(`Thread ${thread_id} is not in an interrupted state`);
     }
     const runConfig = await this.getRunConfig({
       thread_id,
