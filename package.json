@@ -1,5 +1,5 @@
 {
-  "name": "agent-server",
+  "name": "agent-toolkit",
   "module": "src/main.ts",
   "version": "1.0.0",
   "type": "module",

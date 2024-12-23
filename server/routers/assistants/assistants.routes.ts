@@ -1,11 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import { HTTP_STATUS_CODES } from "../../lib/hono/constants/index.ts";
 import jsonContent from "../../lib/hono/openapi/helpers/json-content.ts";
-import {
-  AssistantSchema,
-  type GraphServerConfiguration,
-  type GraphServerProp,
-} from "../../../core/types_old.ts";
+
 import { ErrorResponseSchema } from "../../lib/hono/constants/errors.ts";
 
 /**

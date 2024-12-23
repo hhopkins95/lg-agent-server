@@ -3,14 +3,10 @@ import packageJson from "../package.json" with { type: "json" };
 import { configureAppOpenApi } from "./lib/hono/configure-app-openapi.ts";
 import { createBaseApp, createRouter } from "./lib/hono/create-base-app.ts";
 import { type AppRouterDef } from "./lib/hono/types.ts";
-import { GRAPH_REGISTRY } from "../src/models/registry.ts";
+import { GRAPH_REGISTRY } from "./registry.ts";
 
 // Router Imports
-import type {
-  GraphRouterGenerator,
-  GraphServerProp,
-  ServerConfig,
-} from "../core/types_old.ts";
+import type { TGraphDef } from "../core/types.ts";
 import { assistantsRouter } from "./routers/assistants/assistants.index.ts";
 import { indexRouter } from "./routers/index.route.ts";
 import { threadsRouter } from "./routers/threads/threads.index.ts";
@@ -22,27 +18,26 @@ const BASE_ROUTERS: AppRouterDef[] = [
   indexRouter,
 ]; // base routes
 
-const GRAPH_ROUTERS: GraphRouterGenerator[] = [
+const GRAPH_ROUTERS = [
   assistantsRouter,
   threadsRouter,
 ]; // routes particular to an agent
 
 /**
- * CREATE SERVER
+ * Server Configuration Type
  */
+export interface ServerConfig {
+  dataDir?: string;
+}
 
-import { type Annotation } from "@langchain/langgraph";
-import { z } from "zod";
-
-const CreateGraphServer = <
-  TAnnotation extends ReturnType<typeof Annotation.Root<any>>,
-  TSchema extends z.ZodType,
-  TConfigAnnotation extends ReturnType<typeof Annotation.Root<any>>,
-  TConfigSchema extends z.ZodType,
->(
-  graphs: Array<
-    GraphServerProp<TAnnotation, TSchema, TConfigAnnotation, TConfigSchema>
-  >,
+/**
+ * Creates a new graph server with the specified graphs and configuration
+ * @param graphs Array of graph definitions
+ * @param config Optional server configuration
+ * @returns Configured Hono app instance
+ */
+const CreateGraphServer = (
+  graphs: TGraphDef[],
   config?: ServerConfig,
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
@@ -69,7 +64,7 @@ const CreateGraphServer = <
       const { router, rootPath } = graph_router(graph);
       agentRouter.route(rootPath, router);
     });
-    app.route(`/${graph.graph_name}`, agentRouter);
+    app.route(`/${graph.name}`, agentRouter);
   }
 
   return app;

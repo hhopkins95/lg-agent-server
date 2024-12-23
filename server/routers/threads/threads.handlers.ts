@@ -1,65 +1,34 @@
-import { AppRouteHandler } from "../../lib/hono/types.ts";
+import { type AppRouteHandler } from "../../lib/hono/types.ts";
 import { HTTPException } from "hono/http-exception";
-import { GRAPH_REGISTRY } from "../../../src/models/registry.ts";
-import { GraphServerConfiguration } from "../../../core/types_old.ts";
+import { GRAPH_REGISTRY } from "../../registry.ts";
+import type { TGraphDef } from "../../../core/types.ts";
 import type {
-  CreateBackgroundRunRoute,
   CreateRunAndWaitRoute,
   CreateStreamRunRoute,
   CreateThreadRoute,
   GetThreadRoute,
-  GetThreadStateRoute,
-  ListMemoryRunsRoute,
   ListThreadsRoute,
 } from "./threads.routes.ts";
 
 export const createThread = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<CreateThreadRoute> => {
   return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
     const body = await c.req.json();
 
-    // Generate a unique ID for the thread
-    const threadId = `thread_${crypto.randomUUID()}`;
-
-    const thread = {
-      id: threadId,
-      graphName: graph.graph_name,
-      metadata: {
-        ...body.metadata,
-        assistantId: body.assistantId,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      curState: {
-        checkpoint: {
-          thread_id: threadId,
-          checkpoint_ns: "initial",
-        },
-        metadata: {},
-        created_at: new Date(),
-        next: [],
-        values: graph.state_schema.parse({}),
-      },
-    };
-
-    const createdThread = await threadManager.create(thread);
+    const createdThread = await manager.createThread(body.assistant_id);
     return c.json(createdThread, 201);
   };
 };
 
 export const getThread = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<GetThreadRoute> => {
   return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
-    const { threadId } = c.req.param();
-    const thread = await threadManager.get(threadId);
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const { thread_id } = c.req.param();
+    const thread = await manager.getThread(thread_id);
 
     if (!thread) {
       return c.json({
@@ -75,176 +44,85 @@ export const getThread = (
 };
 
 export const listThreadsByAssistant = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<ListThreadsRoute> => {
   return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
-    const { assistantId } = c.req.query();
-    const threads = await threadManager.listByAssistant(assistantId);
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const { assistant_id } = c.req.query();
+    const threads = await manager.listThreads({
+      assistant_id: assistant_id,
+    });
     return c.json(threads, 200);
   };
 };
 
-export const getThreadState = (
-  graph: GraphServerConfiguration,
-): AppRouteHandler<GetThreadStateRoute> => {
-  return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
-    const { threadId } = c.req.param();
-    const { checkpointId } = c.req.query();
-
-    const state = await threadManager.getState(threadId, checkpointId);
-    if (!state) {
-      throw new HTTPException(404, {
-        message: "Thread or checkpoint not found",
-      });
-    }
-
-    return c.json(state, 200);
-  };
-};
-
 export const createRunAndWaitHandler = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<CreateRunAndWaitRoute> => {
   return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
-    const assistantManager = GRAPH_REGISTRY.getGraphAssistantManager(
-      graph.graph_name,
-    );
-    const runManager = GRAPH_REGISTRY.getGraphRunManager(graph.graph_name);
-
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
     const { thread_id } = c.req.param();
     const body = await c.req.json();
 
-    const thread = await threadManager.get(thread_id);
+    const thread = await manager.getThread(thread_id);
     if (!thread) {
       throw new HTTPException(404, { message: "Thread not found" });
     }
 
-    const assistant = await assistantManager.get(thread.metadata.assistantId);
-    if (!assistant) {
-      throw new HTTPException(404, { message: "Assistant not found" });
-    }
-
-    const runId = `run_${crypto.randomUUID()}`;
-    const run = await runManager.create({
-      id: runId,
-      threadId,
-      graphName: graph.name,
-      status: "queued",
-      metadata: body.metadata || {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const result = await manager.invokeGraph({
+      thread_id,
+      config: body.config,
     });
 
-    // TODO: Implement run execution logic
-    return c.json(run, 201);
+    if (!result.success) {
+      throw new HTTPException(500, { message: result.error });
+    }
+
+    return c.json({
+      status: "completed",
+      values: result.values,
+    }, 200);
   };
 };
 
 export const createStreamRunHandler = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<CreateStreamRunRoute> => {
   return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
-    const assistantManager = GRAPH_REGISTRY.getGraphAssistantManager(
-      graph.graph_name,
-    );
-    const runManager = GRAPH_REGISTRY.getGraphRunManager(graph.graph_name);
-
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
     const { thread_id } = c.req.param();
     const body = await c.req.json();
 
-    const thread = await threadManager.get(thread_id);
+    const thread = await manager.getThread(thread_id);
     if (!thread) {
       throw new HTTPException(404, { message: "Thread not found" });
     }
 
-    const assistant = await assistantManager.get(thread.metadata.assistantId);
-    if (!assistant) {
-      throw new HTTPException(404, { message: "Assistant not found" });
-    }
+    // Set up SSE
+    c.header("Content-Type", "text/event-stream");
+    c.header("Cache-Control", "no-cache");
+    c.header("Connection", "keep-alive");
 
-    const runId = `run_${crypto.randomUUID()}`;
-    const run = await runManager.create({
-      id: runId,
-      threadId,
-      graphName: graph.name,
-      status: "queued",
-      metadata: body.metadata || {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const stream = manager.streamGraph({
+      thread_id,
+      config: body.config,
     });
 
-    // TODO: Implement streaming run execution logic
-    return c.json(run, 201);
-  };
-};
+    const encoder = new TextEncoder();
+    const writer = c.res.();
 
-export const createBackgroundRunHandler = (
-  graph: GraphServerConfiguration,
-): AppRouteHandler<CreateBackgroundRunRoute> => {
-  return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(
-      graph.graph_name,
-    );
-    const assistantManager = GRAPH_REGISTRY.getGraphAssistantManager(
-      graph.graph_name,
-    );
-    const runManager = GRAPH_REGISTRY.getGraphRunManager(graph.graph_name);
-
-    const { thread_id } = c.req.param();
-    const body = await c.req.json();
-
-    const thread = await threadManager.get(thread_id);
-    if (!thread) {
-      throw new HTTPException(404, { message: "Thread not found" });
+    try {
+      for await (const chunk of stream) {
+        const data = JSON.stringify(chunk);
+        await writer.write(encoder.encode(`data: ${data}\n\n`));
+      }
+    } catch (error) {
+      const errorData = JSON.stringify({ error: error.message });
+      await writer.write(encoder.encode(`data: ${errorData}\n\n`));
+    } finally {
+      writer.close();
     }
 
-    const assistant = await assistantManager.get(thread.metadata.assistantId);
-    if (!assistant) {
-      throw new HTTPException(404, { message: "Assistant not found" });
-    }
-
-    const runId = `run_${crypto.randomUUID()}`;
-    const run = await runManager.create({
-      id: runId,
-      threadId,
-      graphName: graph.name,
-      status: "queued",
-      metadata: body.metadata || {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // TODO: Implement background run execution logic
-    return c.json(run, 201);
-  };
-};
-
-export const listRunsHandler = (
-  graph: GraphServerConfiguration,
-): AppRouteHandler<ListMemoryRunsRoute> => {
-  return async (c) => {
-    const threadManager = GRAPH_REGISTRY.getGraphThreadManager(graph.name);
-    const runManager = GRAPH_REGISTRY.getGraphRunManager(graph.name);
-
-    const { threadId } = c.req.param();
-    const thread = await threadManager.get(threadId);
-    if (!thread) {
-      throw new HTTPException(404, { message: "Thread not found" });
-    }
-
-    const runs = await runManager.listByThread(threadId);
-    return c.json(runs, 200);
+    return c.body(null);
   };
 };

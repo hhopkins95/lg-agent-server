@@ -1,62 +1,48 @@
-import {
-  GraphServerConfiguration,
-  GraphServerProp,
-} from "../../../core/types_old.ts";
-import { AppRouteHandler } from "../../lib/hono/types.ts";
-import { HTTPException } from "hono/http-exception";
+import type { TGraphDef } from "../../../core/types.ts";
+import { type AppRouteHandler } from "../../lib/hono/types.ts";
 import type {
   CreateAssistantRoute,
   GetAssistantRoute,
   ListAssistantsRoute,
 } from "./assistants.routes.ts";
-import { GRAPH_REGISTRY } from "../../../src/models/registry.ts";
+import { GRAPH_REGISTRY } from "../../registry.ts";
 
 export const listAllGraphAssistants = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<ListAssistantsRoute> => {
   return async (c) => {
-    const assistantManager = GRAPH_REGISTRY.getGraphAssistantManager(
-      graph.graph_name,
-    );
-    const assistants = await assistantManager.list();
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const assistants = await manager.listAllAssistants();
     return c.json(assistants, 200);
   };
 };
 
 export const createAssistant = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<CreateAssistantRoute> => {
   return async (c) => {
-    const assistantManager = GRAPH_REGISTRY.getGraphAssistantManager(
-      graph.graph_name,
-    );
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
     const body = await c.req.json();
 
-    // Generate a unique ID for the assistant
-    const assistantId = `asst_${crypto.randomUUID()}`;
-
     const assistant = {
-      id: assistantId,
-      graph_name: graph.graph_name,
+      graph_name: graph.name,
       description: body.description,
       metadata: body.metadata,
       config: body.config,
     };
 
-    const createdAssistant = await assistantManager.createAssistant(assistant);
+    const createdAssistant = await manager.createAssistant(assistant);
     return c.json(createdAssistant, 201);
   };
 };
 
 export const getGraphAssistant = (
-  graph: GraphServerConfiguration,
+  graph: TGraphDef,
 ): AppRouteHandler<GetAssistantRoute> => {
   return async (c) => {
-    const assistantManager = GRAPH_REGISTRY.getGraphAssistantManager(
-      graph.graph_name,
-    );
+    const manager = GRAPH_REGISTRY.getManager(graph.name);
     const { assistant_id } = c.req.param();
-    const assistant = await assistantManager.get(assistant_id);
+    const assistant = await manager.getAssistant(assistant_id);
 
     if (!assistant) {
       return c.json({
