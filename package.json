@@ -1,8 +1,17 @@
 {
   "name": "agent-toolkit",
-  "module": "src/main.ts",
+  "module": "index.ts",
   "version": "1.0.0",
   "type": "module",
+  "exports": {
+    ".": { 
+    "import": "./index.ts",
+    },
+    "abc" : { 
+      "import": "./abc.ts"
+    }
+  },
+
   "scripts": {
     "test-core": "bun test core --watch"
   },

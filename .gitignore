@@ -176,3 +176,6 @@ dist
 
 # SQLite databases
 **/*.db
+
+
+prompts
