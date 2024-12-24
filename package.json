@@ -4,11 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "exports": {
-    ".": { 
-    "import": "./index.ts",
+    "./core": {
+      "import": "./core/index.ts"
     },
-    "abc" : { 
-      "import": "./abc.ts"
+    "./server": {
+      "import": "./server/main.ts"
+    },
+    ".": {
+      "import": "./index.ts"
     }
   },
 

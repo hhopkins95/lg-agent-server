@@ -1,3 +1,6 @@
+export const ServerExport = "Hello from server";
+
+
 // Example of how to launch agent server
 
 // const app = CreateGraphServer([
