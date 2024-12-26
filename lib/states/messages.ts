@@ -15,8 +15,6 @@
 import { BaseMessage, SystemMessage } from "@langchain/core/messages";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
-
-
 /**
  * Messages annotation that allows messages to be mounted at a different key that 'messages'
  *

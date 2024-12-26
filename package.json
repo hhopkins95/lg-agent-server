@@ -14,7 +14,6 @@
       "import": "./index.ts"
     }
   },
-
   "scripts": {
     "test-core": "bun test core --watch"
   },
@@ -29,7 +28,7 @@
     "@hono/zod-openapi": "^0.18.3",
     "@langchain/community": "^0.3.17",
     "@langchain/core": "^0.3.20",
-    "@langchain/langgraph": "^0.2.33",
+    "@langchain/langgraph": "^0.2.36",
     "@langchain/langgraph-checkpoint-sqlite": "^0.1.3",
     "@langchain/ollama": "^0.1.2",
     "@langchain/openai": "^0.3.14",
