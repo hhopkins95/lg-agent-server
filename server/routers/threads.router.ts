@@ -87,7 +87,7 @@ export const threadsRouter: GraphRouter = (graphSpec) => {
         },
     );
 
-    // Run Graph
+    // Run Graph with Initial State
     router.post(
         "/run/:threadId",
         zValidator(
@@ -99,23 +99,19 @@ export const threadsRouter: GraphRouter = (graphSpec) => {
         zValidator(
             "json",
             z.object({
-                state: z.record(z.unknown()).optional(),
-                resumeValue: z.unknown().optional(),
+                state: z.record(z.unknown()),
                 config: z.record(z.unknown()).optional(),
-            }).refine((data) => !(data.state && data.resumeValue), {
-                message: "Cannot provide both state and resumeValue",
             }),
         ),
         async (c) => {
             try {
                 const threadId = c.req.param("threadId");
-                const { state, resumeValue, config } = await c.req.json();
+                const { state, config } = await c.req.json();
                 const graphManager = GRAPH_REGISTRY.getManager(graphSpec.name);
 
                 const result = await graphManager.invokeGraph({
                     thread_id: threadId,
                     state,
-                    resumeValue,
                     config,
                 });
 
@@ -127,7 +123,43 @@ export const threadsRouter: GraphRouter = (graphSpec) => {
         },
     );
 
-    // Stream Graph
+    // Resume Interrupted Thread
+    router.post(
+        "/run/:threadId/resume",
+        zValidator(
+            "param",
+            z.object({
+                threadId: z.string(),
+            }),
+        ),
+        zValidator(
+            "json",
+            z.object({
+                resumeValue: z.unknown(),
+                config: z.record(z.unknown()).optional(),
+            }),
+        ),
+        async (c) => {
+            try {
+                const threadId = c.req.param("threadId");
+                const { resumeValue, config } = await c.req.json();
+                const graphManager = GRAPH_REGISTRY.getManager(graphSpec.name);
+
+                const result = await graphManager.resumeThreadFromInterrupt({
+                    thread_id: threadId,
+                    val: resumeValue,
+                    config,
+                });
+
+                return c.json(result);
+            } catch (error) {
+                c.status(500);
+                throw error;
+            }
+        },
+    );
+
+    // Stream Graph with Initial State
     router.post(
         "/stream/:threadId",
         zValidator(
@@ -139,17 +171,14 @@ export const threadsRouter: GraphRouter = (graphSpec) => {
         zValidator(
             "json",
             z.object({
-                state: z.record(z.unknown()).optional(),
-                resumeValue: z.unknown().optional(),
+                state: z.record(z.unknown()),
                 config: z.record(z.unknown()).optional(),
-            }).refine((data) => !(data.state && data.resumeValue), {
-                message: "Cannot provide both state and resumeValue",
             }),
         ),
         async (c) => {
             try {
                 const threadId = c.req.param("threadId");
-                const { state, resumeValue, config } = await c.req.json();
+                const { state, config } = await c.req.json();
                 const graphManager = GRAPH_REGISTRY.getManager(graphSpec.name);
 
                 return new Response(
@@ -159,9 +188,71 @@ export const threadsRouter: GraphRouter = (graphSpec) => {
                                 const stream = graphManager.streamGraph({
                                     thread_id: threadId,
                                     state,
-                                    resumeValue,
                                     config,
                                 });
+
+                                for await (const update of stream) {
+                                    const data = `data: ${
+                                        JSON.stringify(update)
+                                    }\n\n`;
+                                    controller.enqueue(
+                                        new TextEncoder().encode(data),
+                                    );
+                                }
+                                controller.close();
+                            } catch (error) {
+                                controller.error(error);
+                            }
+                        },
+                    }),
+                    {
+                        headers: {
+                            "Content-Type": "text/event-stream",
+                            "Cache-Control": "no-cache",
+                            "Connection": "keep-alive",
+                        },
+                    },
+                );
+            } catch (error) {
+                c.status(500);
+                throw error;
+            }
+        },
+    );
+
+    // Resume Interrupted Thread Stream
+    router.post(
+        "/stream/:threadId/resume",
+        zValidator(
+            "param",
+            z.object({
+                threadId: z.string(),
+            }),
+        ),
+        zValidator(
+            "json",
+            z.object({
+                resumeValue: z.unknown(),
+                config: z.record(z.unknown()).optional(),
+            }),
+        ),
+        async (c) => {
+            try {
+                const threadId = c.req.param("threadId");
+                const { resumeValue, config } = await c.req.json();
+                const graphManager = GRAPH_REGISTRY.getManager(graphSpec.name);
+
+                return new Response(
+                    new ReadableStream({
+                        async start(controller) {
+                            try {
+                                const stream = graphManager
+                                    .resumeThreadFromInterrupt({
+                                        thread_id: threadId,
+                                        val: resumeValue,
+                                        stream: true,
+                                        config,
+                                    });
 
                                 for await (const update of stream) {
                                     const data = `data: ${
