@@ -1,10 +1,9 @@
-import { OpenAPIHono } from "@hono/zod-openapi";
+import { Hono } from "hono";
 import notFound from "./middlewares/not-found.ts";
 import { onError } from "./middlewares/on-error.ts";
 import { pinoLogger } from "./middlewares/pino-logger.ts";
 import serveEmojiFavicon from "./middlewares/serve-emoji-favicon.ts";
 import type { AppBindings } from "./types.ts";
-import { Hono } from "hono";
 
 /**
  * Creates a hono app with default middlewares and configs
