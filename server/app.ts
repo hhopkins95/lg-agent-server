@@ -1,15 +1,12 @@
-// App Setup Imports
+import type { AppStorage } from "@/core/storage/types.ts";
+import type { BaseCheckpointSaver } from "@langchain/langgraph";
+import { Hono } from "hono";
 import { createBaseApp } from "./lib/hono/create-base-app.ts";
 import { GRAPH_REGISTRY } from "./registry.ts";
-
-// Router Imports
-import type { BaseCheckpointSaver } from "@langchain/langgraph";
-import { assistantsRouter } from "./routers/assistants/assistants.index.ts";
-import { threadsRouter } from "./routers/threads/threads.index.ts";
-import type { GraphRouter, GraphServerConfiguration } from "./types.ts";
-import { Hono } from "hono";
-import type { AppStorage } from "@/core/storage/types.ts";
+import { assistantsRouter } from "./routers/assistants.router.ts";
 import { statelessRunsRouter } from "./routers/stateless-runs.router.ts";
+import { threadsRouter } from "./routers/threads.router.ts";
+import type { GraphServerConfiguration } from "./types.ts";
 
 /**
  * Creates a new graph server with the specified graphs and configuration
@@ -24,9 +21,6 @@ const CreateGraphServer = (
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
   const app = createBaseApp();
-
-  // Add base routes
-  // app.route("/", indexRouter);
 
   // Register graphs and create routes
   for (const gd of graphDefs) {
