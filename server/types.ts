@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { Annotation, CompiledStateGraph } from "@langchain/langgraph";
-import type { TAssistant } from "@/core/types.ts";
+import type { TAssistant, TGraphDef } from "@/core/types.ts";
 import type {
   StrictEqual,
   StrictValidateStateTypes,
@@ -20,23 +20,23 @@ export type GraphServerConfiguration<
   TStateSchema extends z.ZodType = z.ZodType,
   TConfigAnnotation extends TAnnotation = TAnnotation,
   TConfigSchema extends z.ZodType = z.ZodType,
-> = {
-  graph_name: string;
-  graph: CompiledStateGraph<any, any>;
-
-  // Types for state / config
-  state_annotation: TStateAnnotation;
-  state_schema: TStateSchema;
-  config_annotation: TConfigAnnotation;
-  config_schema: TConfigSchema;
-
-  // Default values
-  default_state?: z.infer<TStateSchema>;
-  default_config: z.infer<TConfigSchema>;
-
-  // Assistants to launch along with the default assistant
-  launch_assistants?: Array<TAssistant<TConfigAnnotation>>;
-};
+  TStreamableStateKeys extends keyof TStateAnnotation["State"] =
+    keyof TStateAnnotation["State"],
+  TOtherStreamableKeys extends string = string,
+> =
+  & TGraphDef<
+    TStateAnnotation,
+    TConfigAnnotation,
+    TStreamableStateKeys,
+    TOtherStreamableKeys
+  >
+  & {
+    // Additional server-specific schemas for validation
+    state_schema: TStateSchema;
+    config_schema: TConfigSchema;
+    // Override optional config to required for server
+    // default_config: TConfigAnnotation["State"];
+  };
 /**
  * Graph server prop type
  *

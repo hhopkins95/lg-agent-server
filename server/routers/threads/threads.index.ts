@@ -1,9 +1,9 @@
 import { createRouter } from "../../lib/hono/create-base-app.ts";
-import { type GraphRouterGenerator } from "../../../core/types_old.ts";
+import type { GraphServerConfiguration } from "@/server/types.ts";
 import * as handlers from "./threads.handlers.ts";
 import * as routes from "./threads.routes.ts";
 
-export const threadsRouter: GraphRouterGenerator = (graphSpec) => {
+export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
   const router = createRouter()
     .openapi(
       routes.createThread(graphSpec),
