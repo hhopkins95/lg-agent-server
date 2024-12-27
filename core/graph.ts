@@ -23,41 +23,6 @@ import { DEFAULT_ASSISTANT_ID } from "./constants.ts";
 import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
 
 /**
- * TODO :
- *
- * - update to use 2 persistence layers.
- *
- * 1. Checkpointer
- *  - follows langgraph api def.
- *  - used to retrieve / store full current state of a thread (and checkpoints), including interrupts
- *
- * 2. AppStorage
- *  - storage for assistants, and [final] thread states (any time the graph reaches the __END__ node, we will update this)
- *
- * Reasoning :
- * the checkpointer automatically tracks everything we need for runs / checkpoints, but no built in way to query threads / assistants. Only the thread_id can be used as a query param. We need our own storage to manage who has access to what threads, and a way to actually query them.
- *
- * Checkpointer will store the history for any given thread and interrupt values. Any time the state settles, it will be stored in the app storage. So, if the checkpointer ever goes down / switches, the app storage will have the latest state. We will generally get the state from the checkpointer first because it will be more up to date, and then fall back to the app storage if necessary. This just makes the app storage exportable. App storage of the thread will also have other app-specific data, like user_id, assistant_id, etc.
- *
- * Can still pass the same db to the checkpointer and the app storage, but we'll have seperate interfaces in case they are ever decoupled.
- *
- * ---
- * Update getting thread state logic to first check the checkpointer, then the app storage.
- *
- * Update thread type to include status, which should now include any interrupted data (so it can be resumed).
- *
- *  /////
- * HOW THIS SHOULD BE DONE :
- * refactor / remove the current DataStore interface, and make one specific for assistants and threads.That will be the app storage. Create a new class for the app storage. Should expose all of the same methods that we are currently using. Basically just combines the AssistantStore and ThreadStore into one, but with better interaction between them.
- *
- * Create a SQLLite implementation of this class.
- *
- * Checkpointer comes directly from langgraph and is attached directly to the graph.
- *
- * Graph state manager should be initialized with a AppStorage class and a Checkpointer class.
- */
-
-/**
  *  Applies type constraints when creating a graph definitiaon
  */
 export function CreateGraphDef<
@@ -78,9 +43,24 @@ export function CreateGraphDef<
 }
 
 /**
- * Manages all aspects of a graph, including assistants, threads, and runs
- * Acts as the main entry point for graph-related operations
- * @template TGraph - The graph definition
+ * Manages the complete lifecycle of a graph-based application, integrating two persistence layers:
+ * 1. App Storage - Manages assistants and final thread states, providing queryable storage for application data
+ * 2. Checkpointer - Handles run history and interrupt states following the LangGraph API
+ *
+ * Key responsibilities:
+ * - Assistant Management: CRUD operations for assistant configurations
+ * - Thread Management: Creation and state management of conversation threads
+ * - Graph Execution: Both streaming and non-streaming invocation of the graph
+ * - State Persistence: Coordinated storage across both persistence layers
+ * - Interrupt Handling: Support for resumable graph interruptions
+ *
+ * The dual storage approach ensures:
+ * - Queryable access to assistants and threads
+ * - Complete run history preservation
+ * - Reliable state recovery
+ * - Support for user permissions and thread ownership
+ *
+ * @template TGraph - The graph definition type that specifies state and config annotations
  */
 export class GraphStateManager<TGraph extends TGraphDef> {
   protected appStorage: AppStorage<
@@ -383,7 +363,6 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       };
     }
   }
-  // Needs update
   /**
    * Streams the execution of a graph, yielding state updates, LLM outputs, and status changes
    * @param state - Initial state to start the graph with
