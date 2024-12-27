@@ -1,12 +1,7 @@
+import type { TGraphDef } from "@/core/types.ts";
+import type { StrictValidateStateTypes } from "@/lib/utils/type-helpers";
 import { z } from "@hono/zod-openapi";
-import { Annotation, CompiledStateGraph } from "@langchain/langgraph";
-import type { TAssistant, TGraphDef } from "@/core/types.ts";
-import type {
-  StrictEqual,
-  StrictValidateStateTypes,
-  ValidationResult,
-} from "@/lib/utils/type-helpers";
-import type { AppOpenApi } from "./lib/hono/types";
+import { Annotation } from "@langchain/langgraph";
 
 type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
 /**
@@ -33,7 +28,6 @@ export type GraphServerConfiguration<
   >
   & {
     input_schema: TStateSchema;
-
     // Additional server-specific schemas for validation
     state_schema: TStateSchema;
     config_schema: TConfigSchema;
@@ -62,12 +56,3 @@ export type GraphServerProp<
     TConfigAnnotation,
     TConfigSchema
   >;
-
-/**
- * Graph Router -- type that takes a graph definition and returns a hono router
- */
-
-export type GraphRouter = (spec: GraphServerConfiguration) => {
-  router: AppOpenApi;
-  rootPath: string;
-};

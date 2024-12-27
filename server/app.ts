@@ -37,10 +37,6 @@ const CreateGraphServer = (
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
   const app = createBaseApp();
-  configureAppOpenApi(app, {
-    title: "Langgraph Agent Server",
-    version: packageJson.version,
-  });
 
   // Add routes that are not specific to a graph / agent
   for (const baseRoute of BASE_ROUTERS) {
