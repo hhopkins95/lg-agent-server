@@ -32,6 +32,8 @@ export type GraphServerConfiguration<
     TOtherStreamableKeys
   >
   & {
+    input_schema: TStateSchema;
+
     // Additional server-specific schemas for validation
     state_schema: TStateSchema;
     config_schema: TConfigSchema;
