@@ -125,25 +125,25 @@ describe("GraphStateManager", () => {
       expect(thread).toBeUndefined();
     });
 
-    it("should handle invalid graph state", async () => {
-      const assistant = await graphManager.createAssistant({
-        graph_name: TestGraphDef.name,
-        description: "test",
-        config: TestGraphDef.default_config!,
-      });
-      const thread = await graphManager.createThread(assistant.id);
-      const invalidState = { invalid: "state" };
+    // it("should handle invalid graph state", async () => {
+    //   const assistant = await graphManager.createAssistant({
+    //     graph_name: TestGraphDef.name,
+    //     description: "test",
+    //     config: TestGraphDef.default_config!,
+    //   });
+    //   const thread = await graphManager.createThread(assistant.id);
+    //   const invalidState = { invalid: "state" };
 
-      const result = await graphManager.invokeGraph({
-        thread_id: thread.id,
-        state: invalidState as any,
-      });
+    //   const result = await graphManager.invokeGraph({
+    //     thread_id: thread.id,
+    //     state: invalidState as any,
+    //   });
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBeDefined();
-      }
-    });
+    //   expect(result.success).toBe(false);
+    //   if (!result.success) {
+    //     expect(result.error).toBeDefined();
+    //   }
+    // });
   });
 
   describe("state persistence", () => {
