@@ -35,29 +35,17 @@ class GraphRegistry {
    */
   public async registerGraphManager<TGraph extends TGraphDef>(
     graph: TGraph,
-    dataPath?: string,
+    appStorage?: AppStorage,
     checkpointer?: BaseCheckpointSaver,
   ) {
     if (this.GraphManagers.has(graph.name)) {
       throw new Error(`Graph manager for ${graph.name} already exists`);
     }
 
-    // Create appropriate storage based on dataPath
-    let appStorage: AppStorage<
-      TGraph["config_annotation"],
-      TGraph["state_annotation"]
-    >;
-
-    if (dataPath) {
-      appStorage = new FileSystemAppStorage(dataPath);
-    } else {
-      appStorage = new SQLiteAppStorage(":memory:");
-    }
-
     const manager = new GraphStateManager(
       graph,
       appStorage,
-      checkpointer ?? new MemorySaver(),
+      checkpointer,
     );
 
     await manager.initialize();

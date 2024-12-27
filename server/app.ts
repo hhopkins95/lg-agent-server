@@ -1,29 +1,16 @@
 // App Setup Imports
-import packageJson from "../package.json" with { type: "json" };
-import { configureAppOpenApi } from "./lib/hono/configure-app-openapi.ts";
-import { createBaseApp, createRouter } from "./lib/hono/create-base-app.ts";
-import { type AppRouterDef } from "./lib/hono/types.ts";
+import { createBaseApp } from "./lib/hono/create-base-app.ts";
 import { GRAPH_REGISTRY } from "./registry.ts";
 
 // Router Imports
-import type { TGraphDef } from "../core/types.ts";
+import type { BaseCheckpointSaver } from "@langchain/langgraph";
 import { assistantsRouter } from "./routers/assistants/assistants.index.ts";
-import { indexRouter } from "./routers/index.route.ts";
 import { threadsRouter } from "./routers/threads/threads.index.ts";
 import type { GraphRouter, GraphServerConfiguration } from "./types.ts";
-import type { BaseCheckpointSaver } from "@langchain/langgraph";
-
-/**
- * ROUTERS
- */
-const BASE_ROUTERS: AppRouterDef[] = [
-  indexRouter,
-]; // base routes
-
-const GRAPH_ROUTERS: GraphRouter[] = [
-  assistantsRouter,
-  threadsRouter,
-]; // routes particular to an agent
+import { indexRouter } from "./routers/index.route.ts";
+import { Hono } from "hono";
+import type { AppStorage } from "@/core/storage/types.ts";
+import { statelessRunsRouter } from "./routers/stateless-runs.ts";
 
 /**
  * Creates a new graph server with the specified graphs and configuration
@@ -33,29 +20,27 @@ const GRAPH_ROUTERS: GraphRouter[] = [
  */
 const CreateGraphServer = (
   graphs: GraphServerConfiguration[],
+  appStorage?: AppStorage,
   checkpointer?: BaseCheckpointSaver,
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
   const app = createBaseApp();
 
-  // Add routes that are not specific to a graph / agent
-  for (const baseRoute of BASE_ROUTERS) {
-    const { router, rootPath } = baseRoute;
-    app.route(rootPath, router);
-  }
+  // Add base routes
+  app.route("/", indexRouter);
 
   // Register graphs and create routes
   for (const graph of graphs) {
-    // Register graph manager in registry
-    GRAPH_REGISTRY.registerGraphManager(graph);
+    // Register graph manager in registry -- will keep track of threads if in memory
+    GRAPH_REGISTRY.registerGraphManager(graph, appStorage, checkpointer);
+    const graphRouter = new Hono();
 
-    // Create routes for this graph
-    const agentRouter = createRouter();
-    GRAPH_ROUTERS.forEach((graph_router) => {
-      const { router, rootPath } = graph_router(graph);
-      agentRouter.route(rootPath, router);
-    });
-    app.route(`/${graph.name}`, agentRouter);
+    // add routes
+    graphRouter.route("/assistants", assistantsRouter(graph));
+    graphRouter.route("/threads", threadsRouter(graph));
+    graphRouter.route("/stateless-runs", statelessRunsRouter(graph));
+
+    app.route(`/${graph.name}`, graphRouter);
   }
 
   return app;
