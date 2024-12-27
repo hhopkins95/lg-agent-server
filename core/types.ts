@@ -116,3 +116,5 @@ export type TStreamYield<TGraph extends TGraphDef> = {
     meta: LLMStreamMeta;
   };
 };
+
+export { type TInterrupt };
