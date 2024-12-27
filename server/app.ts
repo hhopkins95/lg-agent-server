@@ -10,7 +10,8 @@ import type { TGraphDef } from "../core/types.ts";
 import { assistantsRouter } from "./routers/assistants/assistants.index.ts";
 import { indexRouter } from "./routers/index.route.ts";
 import { threadsRouter } from "./routers/threads/threads.index.ts";
-import type { GraphServerConfiguration } from "./types.ts";
+import type { GraphRouter, GraphServerConfiguration } from "./types.ts";
+import type { BaseCheckpointSaver } from "@langchain/langgraph";
 
 /**
  * ROUTERS
@@ -19,7 +20,7 @@ const BASE_ROUTERS: AppRouterDef[] = [
   indexRouter,
 ]; // base routes
 
-const GRAPH_ROUTERS = [
+const GRAPH_ROUTERS: GraphRouter[] = [
   assistantsRouter,
   threadsRouter,
 ]; // routes particular to an agent
@@ -32,6 +33,7 @@ const GRAPH_ROUTERS = [
  */
 const CreateGraphServer = (
   graphs: GraphServerConfiguration[],
+  checkpointer?: BaseCheckpointSaver,
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
   const app = createBaseApp();
@@ -49,7 +51,7 @@ const CreateGraphServer = (
   // Register graphs and create routes
   for (const graph of graphs) {
     // Register graph manager in registry
-    GRAPH_REGISTRY.registerGraph(graph);
+    GRAPH_REGISTRY.registerGraphManager(graph);
 
     // Create routes for this graph
     const agentRouter = createRouter();

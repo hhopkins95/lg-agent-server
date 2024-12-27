@@ -6,6 +6,7 @@ import type {
   StrictValidateStateTypes,
   ValidationResult,
 } from "@/lib/utils/type-helpers";
+import type { AppOpenApi } from "./lib/hono/types";
 
 type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
 /**
@@ -59,3 +60,12 @@ export type GraphServerProp<
     TConfigAnnotation,
     TConfigSchema
   >;
+
+/**
+ * Graph Router -- type that takes a graph definition and returns a hono router
+ */
+
+export type GraphRouter = (spec: GraphServerConfiguration) => {
+  router: AppOpenApi;
+  rootPath: string;
+};

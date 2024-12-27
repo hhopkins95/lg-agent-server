@@ -14,7 +14,7 @@ export const createThread = (
   graph: TGraphDef,
 ): AppRouteHandler<CreateThreadRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const body = await c.req.json();
 
     const createdThread = await manager.createThread(body.assistant_id);
@@ -26,7 +26,7 @@ export const getThread = (
   graph: TGraphDef,
 ): AppRouteHandler<GetThreadRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const { thread_id } = c.req.param();
     const thread = await manager.getThread(thread_id);
 
@@ -47,7 +47,7 @@ export const listThreadsByAssistant = (
   graph: TGraphDef,
 ): AppRouteHandler<ListThreadsRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const { assistant_id } = c.req.query();
     const threads = await manager.listThreads({
       assistant_id: assistant_id,
@@ -60,7 +60,7 @@ export const createRunAndWaitHandler = (
   graph: TGraphDef,
 ): AppRouteHandler<CreateRunAndWaitRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const { thread_id } = c.req.param();
     const body = await c.req.json();
 
@@ -89,7 +89,7 @@ export const createStreamRunHandler = (
   graph: TGraphDef,
 ): AppRouteHandler<CreateStreamRunRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const { thread_id } = c.req.param();
     const body = await c.req.json();
 

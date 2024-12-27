@@ -11,7 +11,7 @@ export const listAllGraphAssistants = (
   graph: TGraphDef,
 ): AppRouteHandler<ListAssistantsRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const assistants = await manager.listAllAssistants();
     return c.json(assistants, 200);
   };
@@ -21,7 +21,7 @@ export const createAssistant = (
   graph: TGraphDef,
 ): AppRouteHandler<CreateAssistantRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const body = await c.req.json();
 
     const assistant = {
@@ -40,7 +40,7 @@ export const getGraphAssistant = (
   graph: TGraphDef,
 ): AppRouteHandler<GetAssistantRoute> => {
   return async (c) => {
-    const manager = GRAPH_REGISTRY.getManager(graph.name);
+    const manager = GRAPH_REGISTRY.getGraphManager(graph.name);
     const { assistant_id } = c.req.param();
     const assistant = await manager.getAssistant(assistant_id);
 

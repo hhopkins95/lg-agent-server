@@ -33,7 +33,7 @@ class GraphRegistry {
    * @param dataPath Optional data path for storage -- if provided, will use a file store
    * @throws Error if a manager for this graph already exists
    */
-  public async registerGraph<TGraph extends TGraphDef>(
+  public async registerGraphManager<TGraph extends TGraphDef>(
     graph: TGraph,
     dataPath?: string,
     checkpointer?: BaseCheckpointSaver,
@@ -82,14 +82,14 @@ class GraphRegistry {
    * Check if a graph manager exists in the registry
    * @param name The name of the graph to check
    */
-  public hasManager(name: string): boolean {
+  public hasGraphManager(name: string): boolean {
     return this.GraphManagers.has(name);
   }
 
   /**
    * Get all registered graph managers
    */
-  public getAllManagers(): GraphStateManager<any>[] {
+  public getAllGraphManagers(): GraphStateManager<any>[] {
     return Array.from(this.GraphManagers.values());
   }
 
