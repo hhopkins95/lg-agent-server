@@ -10,6 +10,7 @@ import type { TGraphDef } from "../core/types.ts";
 import { assistantsRouter } from "./routers/assistants/assistants.index.ts";
 import { indexRouter } from "./routers/index.route.ts";
 import { threadsRouter } from "./routers/threads/threads.index.ts";
+import type { GraphServerConfiguration } from "./types.ts";
 
 /**
  * ROUTERS
@@ -24,21 +25,13 @@ const GRAPH_ROUTERS = [
 ]; // routes particular to an agent
 
 /**
- * Server Configuration Type
- */
-export interface ServerConfig {
-  dataDir?: string;
-}
-
-/**
  * Creates a new graph server with the specified graphs and configuration
  * @param graphs Array of graph definitions
  * @param config Optional server configuration
  * @returns Configured Hono app instance
  */
 const CreateGraphServer = (
-  graphs: TGraphDef[],
-  config?: ServerConfig,
+  graphs: GraphServerConfiguration[],
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
   const app = createBaseApp();
@@ -56,7 +49,7 @@ const CreateGraphServer = (
   // Register graphs and create routes
   for (const graph of graphs) {
     // Register graph manager in registry
-    GRAPH_REGISTRY.registerGraph(graph, config?.dataDir);
+    GRAPH_REGISTRY.registerGraph(graph);
 
     // Create routes for this graph
     const agentRouter = createRouter();

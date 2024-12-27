@@ -3,7 +3,7 @@ import { GraphStateManager } from "@/core/graph";
 import { SQLiteAppStorage } from "@/core/storage/sqlite";
 import { FileSystemAppStorage } from "@/core/storage/filesystem";
 import type { AppStorage } from "@/core/storage/types";
-import { MemorySaver } from "@langchain/langgraph";
+import { BaseCheckpointSaver, MemorySaver } from "@langchain/langgraph";
 
 /**
  * A singleton registry for managing all graph managers.
@@ -36,6 +36,7 @@ class GraphRegistry {
   public async registerGraph<TGraph extends TGraphDef>(
     graph: TGraph,
     dataPath?: string,
+    checkpointer?: BaseCheckpointSaver,
   ) {
     if (this.GraphManagers.has(graph.name)) {
       throw new Error(`Graph manager for ${graph.name} already exists`);
@@ -56,7 +57,7 @@ class GraphRegistry {
     const manager = new GraphStateManager(
       graph,
       appStorage,
-      new MemorySaver(),
+      checkpointer ?? new MemorySaver(),
     );
 
     await manager.initialize();
