@@ -10,6 +10,9 @@
     "./server": {
       "import": "./server/main.ts"
     },
+    "./lib": {
+      "import": "./lib/index.ts"
+    },
     ".": {
       "import": "./index.ts"
     }
