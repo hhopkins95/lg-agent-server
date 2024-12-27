@@ -1,25 +1,30 @@
-import type { GraphServerConfiguration } from "@/server/types.ts";
-import { createRouter } from "../../lib/hono/create-base-app.ts";
+import type { GraphRouter, GraphServerConfiguration } from "@/server/types.ts";
+import { Hono } from "hono";
 import * as handlers from "./assistants.handlers.ts";
-import * as routes from "./assistants.routes.ts";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
-export const assistantsRouter = (graphSpec: GraphServerConfiguration) => {
-  const router = createRouter()
-    .openapi(
-      routes.listAllGraphAssistants(graphSpec),
-      handlers.listAllGraphAssistants(graphSpec.),
-    )
-    .openapi(
-      routes.createGraphAssistant(graphSpec),
-      handlers.createAssistant(graphSpec),
-    )
-    .openapi(
-      routes.getGraphAssistant(graphSpec),
-      handlers.getGraphAssistant(graphSpec),
-    );
+export const assistantsRouter: GraphRouter = (graphSpec) => {
+  const router = new Hono();
 
-  return {
-    router,
-    rootPath: "/assistants",
-  };
+  router.get(
+    "/",
+    zValidator("query", z.object({ name: z.string() })),
+    handlers.listAllGraphAssistants(graphSpec),
+  );
+
+  // .openapi(
+  //   routes.listAllGraphAssistants(graphSpec),
+  //   handlers.listAllGraphAssistants(graphSpec.),
+  // )
+  // .openapi(
+  //   routes.createGraphAssistant(graphSpec),
+  //   handlers.createAssistant(graphSpec),
+  // )
+  // .openapi(
+  //   routes.getGraphAssistant(graphSpec),
+  //   handlers.getGraphAssistant(graphSpec),
+  // );
+
+  return router;
 };

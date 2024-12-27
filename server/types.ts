@@ -2,6 +2,7 @@ import type { TGraphDef } from "@/core/types.ts";
 import type { StrictValidateStateTypes } from "@/lib/utils/type-helpers";
 import { z } from "@hono/zod-openapi";
 import { Annotation } from "@langchain/langgraph";
+import type { Hono } from "hono";
 
 type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
 /**
@@ -56,3 +57,5 @@ export type GraphServerProp<
     TConfigAnnotation,
     TConfigSchema
   >;
+
+export type GraphRouter = (graphDef: GraphServerConfiguration) => Hono;
