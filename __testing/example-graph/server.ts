@@ -1,14 +1,15 @@
 import createGraphServer from "@/server/app";
-import { testGraphSpecification } from "./test-graph";
-import type { GraphServerConfiguration, GraphServerProp } from "@/server/types";
-import { z } from "zod";
+import { graphSpecification } from "./index.ts";
+import { InputSchema } from "./state.ts";
+import { ConfigurationSchema, defaultConfig } from "./config.ts";
+import type { GraphServerProp } from "@/server/types";
 
-const testServerConfig: GraphServerProp = {
-    ...testGraphSpecification,
+const testGraphServer: GraphServerProp = {
+    ...graphSpecification,
     name: "test_graph_server",
-    config_schema: z.object({}),
-    input_schema: z.object({}),
-    default_config: z.object({}),
+    config_schema: ConfigurationSchema,
+    input_schema: InputSchema,
+    default_config: defaultConfig,
 };
 
-const server = createGraphServer([testServerConfig]);
+export const server = createGraphServer([testGraphServer]);

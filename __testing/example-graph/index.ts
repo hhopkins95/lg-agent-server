@@ -11,19 +11,19 @@ import {
 
 /* NODES */
 async function callModel(
-    state: typeof GraphStateAnnotation.State,
-    runnableConfig: LangGraphRunnableConfig<
-        typeof GraphConfigurationAnnotation.State
+    state: typeof TotalStateAnnotation.State,
+    config: LangGraphRunnableConfig<
+        typeof ConfigurationAnnotation.State
     >,
-): Promise<typeof GraphStateAnnotation.Update> {
-    console.log("Beginning Stream Process...");
+): Promise<typeof TotalStateAnnotation.Update> {
+    console.log("Beginning Test Stream Process...");
     const llm = getLLM("qwen2_5__05b");
     const result = await llm.invoke(state.messages, {
-        tags: ["messages"],
+        tags: ["messages"], // tagged as state stream key
     });
-    const foo = result.content;
     console.log("Stream Process Complete");
     return {
+        messages: [result],
         count: state.count + 1,
     };
 }
