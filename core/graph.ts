@@ -26,14 +26,16 @@ import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
  *  Applies type constraints when creating a graph definitiaon
  */
 export function CreateGraphDef<
-  TStateAnnotation extends TAnnotation,
+  TInputAnnotation extends TAnnotation,
+  TOutputAnnotation extends TAnnotation,
   TConfigAnnotation extends TAnnotation,
-  TStateStreamKeys extends keyof TStateAnnotation["State"] =
-    keyof TStateAnnotation["State"],
+  TStateStreamKeys extends keyof TInputAnnotation["State"] =
+    keyof TInputAnnotation["State"],
   TOtherStreamKeys extends string = string,
 >(
   def: TGraphDef<
-    TStateAnnotation,
+    TInputAnnotation,
+    TOutputAnnotation,
     TConfigAnnotation,
     TStateStreamKeys,
     TOtherStreamKeys
@@ -65,7 +67,7 @@ export function CreateGraphDef<
 export class GraphStateManager<TGraph extends TGraphDef> {
   protected appStorage: AppStorage<
     TGraph["config_annotation"],
-    TGraph["state_annotation"]
+    TGraph["output_annotation"]
   >;
   protected checkpointer: BaseCheckpointSaver;
   protected graphConfig: TGraph;
@@ -173,7 +175,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
   async createThread(
     assistant_id: string,
-  ): Promise<TThread<TGraph["state_annotation"]>> {
+  ): Promise<TThread<TGraph["output_annotation"]>> {
     // make sure the assistant exists
     const assistant = await this.appStorage.getAssistant(assistant_id);
     if (!assistant) {
@@ -184,7 +186,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       assistant_id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      values: this.graphConfig.default_state,
+      values: {},
       status: {
         status: "idle",
       },
@@ -193,8 +195,8 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
   private async updateThread(
     threadId: string,
-    values: Partial<Omit<TThread<TGraph["state_annotation"]>, "id">>,
-  ): Promise<TThread<TGraph["state_annotation"]>> {
+    values: Partial<Omit<TThread<TGraph["output_annotation"]>, "id">>,
+  ): Promise<TThread<TGraph["output_annotation"]>> {
     // Always save to app storage
     const res = await this.appStorage.updateThread(threadId, {
       ...values,
@@ -253,10 +255,10 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     config?: Partial<TGraph["config_annotation"]["State"]>;
   }): TReturn extends true ? AsyncGenerator<TStreamYield<TGraph>>
     : Promise<
-      | { success: true; values: TGraph["state_annotation"]["State"] }
+      | { success: true; values: TGraph["output_annotation"]["State"] }
       | {
         success: false;
-        values?: TGraph["state_annotation"]["State"];
+        values?: TGraph["output_annotation"]["State"];
         error: string;
       }
     > {
@@ -283,10 +285,10 @@ export class GraphStateManager<TGraph extends TGraphDef> {
         });
     })() as TReturn extends true ? AsyncGenerator<TStreamYield<TGraph>>
       : Promise<
-        | { success: true; values: TGraph["state_annotation"]["State"] }
+        | { success: true; values: TGraph["output_annotation"]["State"] }
         | {
           success: false;
-          values?: TGraph["state_annotation"]["State"];
+          values?: TGraph["output_annotation"]["State"];
           error: string;
         }
       >;
@@ -300,12 +302,12 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     thread_id,
     config,
   }: {
-    state?: TGraph["state_annotation"]["State"];
+    state?: TGraph["output_annotation"]["State"];
     resumeValue?: unknown;
   } & TGetRunConfigParams<typeof this.graphConfig>): Promise<
-    { success: true; values: TGraph["state_annotation"]["State"] } | {
+    { success: true; values: TGraph["output_annotation"]["State"] } | {
       success: false;
-      values?: TGraph["state_annotation"]["State"];
+      values?: TGraph["output_annotation"]["State"];
       error: string;
     }
   > {
@@ -342,7 +344,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       }
       return { success: true, values: res };
     } catch (e) {
-      let latest_values: TGraph["state_annotation"]["State"] | undefined;
+      let latest_values: TGraph["output_annotation"]["State"] | undefined;
       if (thread_id) {
         // get latest state from the run via checkpointer
         latest_values =
@@ -379,7 +381,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     thread_id,
     config,
   }: {
-    state?: TGraph["state_annotation"]["State"];
+    state?: TGraph["output_annotation"]["State"];
     resumeValue?: unknown;
   } & TGetRunConfigParams<typeof this.graphConfig>): AsyncGenerator<
     TStreamYield<TGraph>
@@ -440,7 +442,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
 
         // Handle full state updates
         if (eventType === "values") {
-          const _data = data as TGraph["state_annotation"]["State"];
+          const _data = data as TGraph["output_annotation"]["State"];
           if (thread_id) {
             await this.updateThread(thread_id, {
               values: _data,
@@ -468,8 +470,9 @@ export class GraphStateManager<TGraph extends TGraphDef> {
           if (state_key) {
             yield {
               state_llm_stream_data: {
+                // @ts-expect-error TODO -- Fix this?
                 key: state_key as TGraph extends
-                  TGraphDef<any, any, infer K, any> ? K : never,
+                  TGraphDef<any, any, any, infer K, any> ? K : never,
                 chunk,
                 meta,
               },

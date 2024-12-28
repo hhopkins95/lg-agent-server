@@ -20,7 +20,7 @@ export type ThreadFilter = {
  */
 export interface AppStorage<
     TConfig extends TAnnotation = TAnnotation,
-    TState extends TAnnotation = TAnnotation,
+    TGraphOutput extends TAnnotation = TAnnotation,
 > {
     // Assistant operations
     createAssistant(
@@ -35,13 +35,13 @@ export interface AppStorage<
     deleteAssistant(id: string): Promise<boolean>;
 
     // Thread operations
-    createThread(thread: TThread<TState>): Promise<TThread<TState>>;
-    getThread(id: string): Promise<TThread<TState> | undefined>;
-    listThreads(filter?: ThreadFilter): Promise<TThread<TState>[]>;
+    createThread(thread: TThread<TGraphOutput>): Promise<TThread<TGraphOutput>>;
+    getThread(id: string): Promise<TThread<TGraphOutput> | undefined>;
+    listThreads(filter?: ThreadFilter): Promise<TThread<TGraphOutput>[]>;
     updateThread(
         id: string,
-        updates: Partial<TThread<TState>>,
-    ): Promise<TThread<TState> | undefined>;
+        updates: Partial<TThread<TGraphOutput>>,
+    ): Promise<TThread<TGraphOutput> | undefined>;
     deleteThread(id: string): Promise<boolean>;
 
     // Lifecycle operations
