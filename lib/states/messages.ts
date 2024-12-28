@@ -1,17 +1,3 @@
-/**
- * MessagesAnnotation is a pre-built state annotation imported from @langchain/langgraph.
- * It is the same as the following annotation:
- *
- * ```typescript
- * const MessagesAnnotation = Annotation.Root({
- *   messages: Annotation<BaseMessage[]>({
- *     reducer: messagesStateReducer,
- *     default: () => [systemMessage],
- *   }),
- * });
- * ```
- */
-
 import type { BaseMessage } from "@langchain/core/messages";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { z } from "zod";

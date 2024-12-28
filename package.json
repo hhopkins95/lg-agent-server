@@ -10,11 +10,27 @@
     "./server": {
       "import": "./server/main.ts"
     },
+
+    ".": {
+      "import": "./index.ts"
+    },
     "./lib": {
       "import": "./lib/index.ts"
     },
-    ".": {
-      "import": "./index.ts"
+    "./lib/checkpointers": {
+      "import": "./lib/checkpointers/index.ts"
+    },
+    "./lib/graph-utils": {
+      "import": "./lib/graph-utils/index.ts"
+    },
+    "./lib/prompts": {
+      "import": "./lib/prompts/index.ts"
+    },
+    "./lib/models": {
+      "import": "./lib/models/index.ts"
+    },
+    "./lib/states": {
+      "import": "./lib/states/index.ts"
     }
   },
   "scripts": {
