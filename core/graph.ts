@@ -186,7 +186,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
       assistant_id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      values: {},
+      values: undefined,
       status: {
         status: "idle",
       },
@@ -470,7 +470,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
           if (state_key) {
             yield {
               state_llm_stream_data: {
-                // @ts-expect-error TODO -- Fix this?
+                // @ts-expect-error TODO -- Fix this?lkk
                 key: state_key as TGraph extends
                   TGraphDef<any, any, any, infer K, any> ? K : never,
                 chunk,
