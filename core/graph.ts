@@ -80,7 +80,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
     graphConfig: TGraph,
     appStorage?: AppStorage<
       TGraph["config_annotation"],
-      TGraph["state_annotation"]
+      TGraph["output_annotation"]
     >,
     checkpointer?: BaseCheckpointSaver,
   ) {

@@ -147,7 +147,7 @@ export const GraphDefinition = CreateGraphDef({
   graph,
   name: "test_graph",
   config_annotation: GraphConfigurationAnnotation,
-  state_annotation: GraphStateAnnotation,
+  input_annotation: GraphStateAnnotation,
   default_config: defaultConfig,
   default_state: defaultState,
   input_keys: inputKeys,

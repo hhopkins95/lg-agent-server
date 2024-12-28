@@ -8,6 +8,16 @@ import {
 import { CreateGraphDef } from "@/core/graph";
 import { getLLM } from "@/lib/models/loadLLM";
 
+const InputStateAnnotation = Annotation.Root({
+    user_input: Annotation<string>,
+    foo: Annotation<string>,
+});
+
+const OutputStateAnnotation = Annotation.Root({
+    graph_output: Annotation<string>,
+    foo: Annotation<number>,
+});
+
 //  CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
     config_value: Annotation<string>(),
@@ -19,6 +29,8 @@ const defaultConfig: typeof GraphConfigurationAnnotation.State = {
 // STATE
 const GraphStateAnnotation = Annotation.Root({
     ...MessagesAnnotation.spec,
+    ...OutputStateAnnotation.spec,
+    ...InputStateAnnotation.spec,
     count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
@@ -32,10 +44,10 @@ const streamStateKeys: Array<keyof typeof GraphStateAnnotation.State> = [
     "messages",
 ];
 
-const defaultState: typeof GraphStateAnnotation.State = {
-    count: 0,
-    messages: [],
-};
+// const defaultState: typeof GraphStateAnnotation.State = {
+//     count: 0,
+//     messages: [],
+// };
 
 /* NODES */
 async function callModel(
@@ -58,7 +70,11 @@ async function callModel(
 
 /* GRAPH */
 const workflow = new StateGraph(
-    GraphStateAnnotation,
+    // GraphStateAnnotation,
+    {
+        input: GraphStateAnnotation,
+        output: GraphStateAnnotation,
+    },
     GraphConfigurationAnnotation,
 )
     // nodes
@@ -77,9 +93,10 @@ export const GraphDefinition = CreateGraphDef({
     name: "test_graph",
     config_annotation: GraphConfigurationAnnotation,
     input_annotation: GraphStateAnnotation,
+    output_annotation: GraphStateAnnotation,
     default_config: defaultConfig,
-    default_state: defaultState,
-    // input_keys: inputKeys,
-    // output_keys: outputKeys,
+    // default_state: defaultState,
+    // input_keys: ["count"],
+    // output_keys: outputKeys,j
     state_llm_stream_keys: streamStateKeys,
 });

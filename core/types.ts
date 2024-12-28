@@ -15,10 +15,11 @@ export type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
  * Graph Def
  */
 export type TGraphDef<
-  TStateAnnotation extends TAnnotation = TAnnotation,
+  TInputAnnotation extends TAnnotation = TAnnotation,
+  TOutputAnnotation extends TAnnotation = TAnnotation,
   TConfigAnnotation extends TAnnotation = TAnnotation,
-  TStreamableStateKeys extends keyof TStateAnnotation["State"] =
-    keyof TStateAnnotation["State"],
+  TStreamableStateKeys extends keyof TOutputAnnotation["State"] =
+    keyof TOutputAnnotation["State"],
   TOtherStreamableKeys extends string = string,
 > = {
   name: string;
@@ -27,15 +28,14 @@ export type TGraphDef<
   graph: CompiledStateGraph<any, any, any, any>;
 
   // schemas
-  state_annotation: TStateAnnotation;
+  input_annotation: TInputAnnotation;
+  output_annotation: TOutputAnnotation;
   config_annotation: TConfigAnnotation;
 
   // input / output keys -- will default to all. Mainly used for documentation / client type generation
-  input_keys?: Array<keyof TStateAnnotation["State"]>;
-  output_keys?: Array<keyof TStateAnnotation["State"]>;
 
   // defaults
-  default_state?: TStateAnnotation["State"];
+  // default_state?: TStateAnnotation["State"];
   default_config?: TConfigAnnotation["State"];
 
   // stream config
@@ -103,8 +103,8 @@ export type LLMStreamMeta = {
   langgraph_step?: number;
 };
 export type TStreamYield<TGraph extends TGraphDef> = {
-  full_state_update?: TThread<TGraph["state_annotation"]>["values"];
-  status_change?: TThread<TGraph["state_annotation"]>["status"];
+  full_state_update?: TThread<TGraph["output_annotation"]>["values"];
+  status_change?: TThread<TGraph["output_annotation"]>["status"];
   state_llm_stream_data?: {
     key: TGraph extends TGraphDef<any, any, infer K, any> ? K : never;
     chunk: AIMessageChunk | ToolMessageChunk;
