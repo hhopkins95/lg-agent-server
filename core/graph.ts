@@ -29,8 +29,8 @@ export function CreateGraphSpecification<
   TInputAnnotation extends TAnnotation,
   TOutputAnnotation extends TAnnotation,
   TConfigAnnotation extends TAnnotation,
-  TStateStreamKeys extends keyof TInputAnnotation["State"] =
-    keyof TInputAnnotation["State"],
+  TStateStreamKeys extends keyof TOutputAnnotation["State"] =
+    keyof TOutputAnnotation["State"],
   TOtherStreamKeys extends string = string,
 >(
   def: TGraphSpecification<

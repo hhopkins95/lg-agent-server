@@ -1,21 +1,13 @@
-import {
-    Annotation,
-    type LangGraphRunnableConfig,
-    MessagesAnnotation,
-    StateGraph,
-} from "@langchain/langgraph";
 import { CreateGraphSpecification } from "@/core/graph";
 import { getLLM } from "@/lib/models/loadLLM";
-import { z } from "zod";
-import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
-import { CustomMessagesAnnotation } from "@/lib";
-
-// GraphStateAnnotation.State.messages[0].
-
-const MessageSchema = z.object({
-    content: z.string(),
-    role: z.enum(["user", "assistant"]),
-});
+import { type LangGraphRunnableConfig, StateGraph } from "@langchain/langgraph";
+import { ConfigurationAnnotation, defaultConfig } from "./config";
+import {
+    InputAnnotation,
+    OutputAnnotation,
+    streamStateKeys,
+    TotalStateAnnotation,
+} from "./state";
 
 /* NODES */
 async function callModel(
@@ -38,8 +30,11 @@ async function callModel(
 
 /* GRAPH */
 const workflow = new StateGraph(
-    GraphStateAnnotation,
-    GraphConfigurationAnnotation,
+    {
+        input: InputAnnotation,
+        output: OutputAnnotation,
+    },
+    ConfigurationAnnotation,
 )
     // nodes
     .addNode("callModel", callModel)
@@ -50,12 +45,12 @@ const workflow = new StateGraph(
 
 const graph = workflow.compile();
 
-export const testGraphSpecification = CreateGraphSpecification({
+export const graphSpecification = CreateGraphSpecification({
     graph,
     name: "test_graph",
-    config_annotation: GraphConfigurationAnnotation,
-    input_annotation: GraphStateAnnotation,
-    output_annotation: GraphStateAnnotation,
+    config_annotation: ConfigurationAnnotation,
+    input_annotation: InputAnnotation,
+    output_annotation: OutputAnnotation,
     default_config: defaultConfig,
     state_llm_stream_keys: streamStateKeys,
 });
