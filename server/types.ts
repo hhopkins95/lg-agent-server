@@ -1,5 +1,5 @@
 import type { TGraphSpecification } from "@/core/types.ts";
-import type { StrictValidateStateTypes } from "@/lib/utils/type-helpers";
+import type { StrictValidateStateTypes } from "@/lib/type-helpers";
 import { z } from "@hono/zod-openapi";
 import { Annotation } from "@langchain/langgraph";
 import type { Hono } from "hono";
@@ -33,32 +33,33 @@ export type GraphServerConfiguration<
     // Additional server-specific schemas for validation
     input_schema: TInputSchema;
     config_schema: TConfigSchema;
-    // Override optional config to required for server
-    // default_config: TConfigAnnotation["State"];
   };
+
+export type GraphRouter = (graphDef: GraphServerConfiguration) => Hono;
+
 /**
+ * DEPRECATED -- use `GraphServerConfiguration` without typecheck. Just assert the schemas match prior to creating the server
+ *
  * Graph server prop type
  *
  * Makes sure that the graph state annotation matches the zod schemas passed in. Zod schema is needed for app function / client generation, but the annotation is how the graph actually keeps track of the state
  *
  * Resolves to `never` if the schemas do not match and should trigger a compiler error
  */
-export type GraphServerProp<
-  TInputAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TInputSchema extends z.ZodType = z.ZodType,
-  TOutputAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TConfigAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TConfigSchema extends z.ZodType = z.ZodType,
-> = StrictValidateStateTypes<TInputAnnotation, TInputSchema> extends never
-  ? never
-  : StrictValidateStateTypes<TConfigAnnotation, TConfigSchema> extends never
-    ? never
-  : GraphServerConfiguration<
-    TInputAnnotation,
-    TInputSchema,
-    TOutputAnnotation,
-    TConfigAnnotation,
-    TConfigSchema
-  >;
-
-export type GraphRouter = (graphDef: GraphServerConfiguration) => Hono;
+// export type GraphServerProp<
+//   TInputAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+//   TInputSchema extends z.ZodType = z.ZodType,
+//   TOutputAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+//   TConfigAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+//   TConfigSchema extends z.ZodType = z.ZodType,
+// > = StrictValidateStateTypes<TInputAnnotation, TInputSchema> extends never
+//   ? never
+//   : StrictValidateStateTypes<TConfigAnnotation, TConfigSchema> extends never
+//     ? never
+//   : GraphServerConfiguration<
+//     TInputAnnotation,
+//     TInputSchema,
+//     TOutputAnnotation,
+//     TConfigAnnotation,
+//     TConfigSchema
+//   >;

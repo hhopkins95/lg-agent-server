@@ -1,12 +1,11 @@
 import createGraphServer from "@/server/app";
+import type { GraphServerConfiguration } from "@/server/types";
+import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
-import { ConfigurationSchema, defaultConfig } from "./config.ts";
-import type { GraphServerProp } from "@/server/types";
 
-const testGraphServer: GraphServerProp = {
+const testGraphServer: GraphServerConfiguration = {
     ...graphSpecification,
-    name: "test_graph_server",
     config_schema: ConfigurationSchema,
     input_schema: InputSchema,
     default_config: defaultConfig,
