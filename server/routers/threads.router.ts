@@ -46,15 +46,14 @@ export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
             async (c) => {
                 try {
                     const threadId = c.req.param("threadId");
-                    const graphManager = GRAPH_REGISTRY.getManager(
-                        graphSpec.name,
-                    );
+                    const graphManager: GraphManager<typeof graphSpec> =
+                        GRAPH_REGISTRY.getManager(
+                            graphSpec.name,
+                        );
                     const thread = await graphManager.getThread(threadId);
                     if (!thread) {
                         c.status(404);
-                        return c.json({
-                            error: `Thread ${threadId} not found`,
-                        });
+                        throw new Error();
                     }
                     return c.json({
                         thread,

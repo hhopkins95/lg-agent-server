@@ -11,11 +11,15 @@ const testGraphServer: GraphServerConfiguration = {
     default_config: defaultConfig,
 };
 
-export const server = createGraphServer([testGraphServer]);
-
+export const server = createGraphServer(testGraphServer);
 export type AppType = typeof server;
-import { hc } from 'hono/client'
-const client = hc<AppType>('http://localhost:8787/')
+import { hc } from "hono/client";
+const client = hc<AppType>("/");
 
+const foo = await (await client.threads[":threadId"].$get({
+    param: {
+        threadId: "asdf",
+    },
+})).json();
 
-const foo = await client.
+foo.thread.values;

@@ -13,42 +13,47 @@ import { mergeRoutes, type Module } from "./lib/hono/helpers.ts";
 
 /**
  * Creates a new graph server with the specified graphs and configuration
- * @param graphDefs Array of graph definitions
+ * @param graphConfig Array of graph definitions
  * @param config Optional server configuration
  * @returns Configured Hono app instance
  */
-const createGraphServer = <
-  TGraphDefs extends readonly [...GraphServerConfiguration[]],
->(
-  graphDefs: TGraphDefs,
+const createGraphServer = (
+  graphConfig: GraphServerConfiguration, // TGraphDefs,
   appStorage?: AppStorage,
   checkpointer?: BaseCheckpointSaver,
 ) => {
   // Create hono app with middlewares, and configure the openapi doc routes
 
-  let graph_routers = [];
-  // Register graphs and create routes
-  for (const gd of graphDefs) {
-    // Register graph manager in registry -- will keep track of threads if in memory
-    GRAPH_REGISTRY.registerGraphManager(gd, appStorage, checkpointer);
+  // let graph_routers = []; // as const satisfies Module[];
+  // // Register graphs and create routes
+  // for (const gd of graphConfig) {
+  //   // Register graph manager in registry -- will keep track of threads if in memory
+  //   GRAPH_REGISTRY.registerGraphManager(gd, appStorage, checkpointer);
 
-    // add routes to graph
-    const graphRouter = new Hono()
-      .route("/threads", threadsRouter(gd))
-      .route("/assistants", assistantsRouter(gd))
-      .route("/stateless-runs", statelessRunsRouter(gd));
+  //   // add routes to graph
+  //   const graphRouter = new Hono()
+  //     .route("/threads", threadsRouter(gd))
+  //     .route("/assistants", assistantsRouter(gd))
+  //     .route("/stateless-runs", statelessRunsRouter(gd));
 
-    // type GraphRouterType =
+  //   // type GraphRouterType =
 
-    // add graph router to app
-    graph_routers.push({
-      path: gd.name,
-      routes: graphRouter,
-    });
-  }
+  //   // add graph router to app
+  //   graph_routers.push({
+  //     path: gd.name,
+  //     routes: graphRouter,
+  //   });
+  // }
+
+  const app = new Hono<AppBindings>()
+    .route("/threads", threadsRouter(graphConfig))
+    .route("/assistants", assistantsRouter(graphConfig))
+    .route("/stateless-runs", statelessRunsRouter(graphConfig));
+
+  // const fin = [...graph_routers] as const satisfies Module[];
 
   // Build up the app with proper typing by chaining routers
-  const app = mergeRoutes(new Hono(), ...graph_routers);
+  // const app = mergeRoutes(new Hono(), ...fin);
 
   type AppType = typeof app;
 
