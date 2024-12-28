@@ -13,24 +13,25 @@ type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
  * Uses `StrictValidateStateTypes` to ensure that the schemas match the annotation types
  */
 export type GraphServerConfiguration<
-  TStateAnnotation extends TAnnotation = TAnnotation,
-  TStateSchema extends z.ZodType = z.ZodType,
+  TInputAnnotation extends TAnnotation = TAnnotation,
+  TInputSchema extends z.ZodType = z.ZodType,
+  TOutputAnnotation extends TAnnotation = TAnnotation,
   TConfigAnnotation extends TAnnotation = TAnnotation,
   TConfigSchema extends z.ZodType = z.ZodType,
-  TStreamableStateKeys extends keyof TStateAnnotation["State"] =
-    keyof TStateAnnotation["State"],
+  TStreamableStateKeys extends keyof TInputAnnotation["State"] =
+    keyof TInputAnnotation["State"],
   TOtherStreamableKeys extends string = string,
 > =
   & TGraphDef<
-    TStateAnnotation,
+    TInputAnnotation,
+    TOutputAnnotation,
     TConfigAnnotation,
     TStreamableStateKeys,
     TOtherStreamableKeys
   >
   & {
-    input_schema: TStateSchema;
     // Additional server-specific schemas for validation
-    state_schema: TStateSchema;
+    input_schema: TInputSchema;
     config_schema: TConfigSchema;
     // Override optional config to required for server
     // default_config: TConfigAnnotation["State"];
@@ -43,17 +44,19 @@ export type GraphServerConfiguration<
  * Resolves to `never` if the schemas do not match and should trigger a compiler error
  */
 export type GraphServerProp<
-  TStateAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TStateSchema extends z.ZodType,
+  TInputAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+  TInputSchema extends z.ZodType,
+  TOutputAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
   TConfigAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
   TConfigSchema extends z.ZodType,
-> = StrictValidateStateTypes<TStateAnnotation, TStateSchema> extends never
+> = StrictValidateStateTypes<TInputAnnotation, TInputSchema> extends never
   ? never
   : StrictValidateStateTypes<TConfigAnnotation, TConfigSchema> extends never
     ? never
   : GraphServerConfiguration<
-    TStateAnnotation,
-    TStateSchema,
+    TInputAnnotation,
+    TInputSchema,
+    TOutputAnnotation,
     TConfigAnnotation,
     TConfigSchema
   >;
