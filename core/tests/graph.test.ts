@@ -40,8 +40,7 @@ describe("GraphStateManager", () => {
       const thread = await graphManager.createThread(assistant.id);
       expect(thread).toBeDefined();
       expect(thread.assistant_id).toBe(assistant.id);
-      expect(thread.values?.count).toBe(0);
-      expect(thread.values?.messages).toEqual([]);
+      expect(thread.values).toEqual({});
     });
 
     it("should get all assistants", async () => {
