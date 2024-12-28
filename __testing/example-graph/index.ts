@@ -10,34 +10,11 @@ import { z } from "zod";
 import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
 import { CustomMessagesAnnotation } from "@/lib";
 
-//  CONFIGURATION
-const GraphConfigurationAnnotation = Annotation.Root({
-    config_value: Annotation<string>(),
-});
-const defaultConfig: typeof GraphConfigurationAnnotation.State = {
-    config_value: "default_config",
-};
-
-// STATE
-const GraphStateAnnotation = Annotation.Root({
-    messages: CustomMessagesAnnotation,
-    count: Annotation<number>, // example number property -- counts how many times the model has been called
-});
-
-const streamStateKeys: Array<keyof typeof GraphStateAnnotation.State> = [
-    "messages",
-];
-
 // GraphStateAnnotation.State.messages[0].
 
 const MessageSchema = z.object({
     content: z.string(),
     role: z.enum(["user", "assistant"]),
-});
-
-const GraphStateSchema = z.object({
-    messages: z.array(MessageSchema),
-    count: z.number(),
 });
 
 /* NODES */

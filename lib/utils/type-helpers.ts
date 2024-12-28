@@ -1,6 +1,6 @@
 import type { z } from "@hono/zod-openapi";
 import type { Annotation } from "@langchain/langgraph";
-import { assert } from "tsafe";
+import { assert, type Equals } from "tsafe";
 
 /**
  * Strictly checks if two types are exactly equal.
@@ -85,24 +85,3 @@ export type StrictValidateStateTypes<
 > = StrictEqual<z.infer<TSchema>, TAnnotation["State"]> extends true
     ? ValidationResult<TAnnotation, TSchema>
     : never;
-
-/**
- * A utility function that asserts two types are equal at runtime.
- * This is an alias for the tsafe assert function, used for type checking.
- *
- * @example
- * ```typescript
- * // Example usage
- * type A = { x: number };
- * type B = { x: number };
- *
- * // This will pass
- * assertTypesAreEqual<A, B>();
- *
- * // This would fail at compile time
- * type C = { x: string };
- * // @ts-expect-error
- * assertTypesAreEqual<A, C>();
- * ```
- */
-export const assertTypesAreEqual = assert;
