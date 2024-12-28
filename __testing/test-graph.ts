@@ -4,9 +4,10 @@ import {
     MessagesAnnotation,
     StateGraph,
 } from "@langchain/langgraph";
-
 import { CreateGraphDef } from "@/core/graph";
 import { getLLM } from "@/lib/models/loadLLM";
+import { z } from "zod";
+import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 
 //  CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
@@ -22,20 +23,21 @@ const GraphStateAnnotation = Annotation.Root({
     count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
-const inputKeys: Array<keyof typeof GraphStateAnnotation.State> = ["messages"]; // potentially used downstream for clients
-const outputKeys: Array<keyof typeof GraphStateAnnotation.State> = [
-    "count",
-    "messages",
-]; // potentially used downstream for clients
-
 const streamStateKeys: Array<keyof typeof GraphStateAnnotation.State> = [
     "messages",
 ];
 
-const defaultState: typeof GraphStateAnnotation.State = {
-    count: 0,
-    messages: [],
-};
+// GraphStateAnnotation.State.messages[0].
+
+const MessageSchema = z.object({
+    content: z.string(),
+    role: z.enum(["user", "assistant"]),
+});
+
+const GraphStateSchema = z.object({
+    messages: z.array(MessageSchema),
+    count: z.number(),
+});
 
 /* NODES */
 async function callModel(
@@ -68,9 +70,7 @@ const workflow = new StateGraph(
     // conditional edges (routers)
     .addEdge("callModel", "__end__");
 
-const graph = workflow.compile({
-    // checkpointer: new MemorySaver(),
-});
+const graph = workflow.compile();
 
 export const GraphDefinition = CreateGraphDef({
     graph,
