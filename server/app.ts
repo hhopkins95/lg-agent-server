@@ -7,6 +7,9 @@ import { assistantsRouter } from "./routers/assistants.router.ts";
 import { statelessRunsRouter } from "./routers/stateless-runs.router.ts";
 import { threadsRouter } from "./routers/threads.router.ts";
 import type { GraphServerConfiguration } from "./types.ts";
+import type { MergeSchemaPath } from "hono/types";
+import type { AppBindings } from "./lib/hono/types.ts";
+import { mergeRoutes, type Module } from "./lib/hono/helpers.ts";
 
 /**
  * Creates a new graph server with the specified graphs and configuration
@@ -35,13 +38,21 @@ const createGraphServer = <
       .route("/assistants", assistantsRouter(gd))
       .route("/stateless-runs", statelessRunsRouter(gd));
 
+    // type GraphRouterType =
+
     // add graph router to app
-    graph_routers.push(graphRouter);
+    graph_routers.push({
+      path: gd.name,
+      routes: graphRouter,
+    });
   }
 
-  const app = createBaseApp().route("/", graph_routers);
+  // Build up the app with proper typing by chaining routers
+  const app = mergeRoutes(new Hono(), ...graph_routers);
 
-  return app; //  as TypedGraphServer<TGraphDefs>;
+  type AppType = typeof app;
+
+  return app;
 };
 
 export default createGraphServer;
