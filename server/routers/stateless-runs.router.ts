@@ -3,8 +3,13 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
+import type { GraphManager } from "@/core";
 
-export const statelessRunsRouter = (graphSpec: GraphServerConfiguration) => {
+export const statelessRunsRouter = <Spec extends GraphServerConfiguration>(
+    graphSpec: Spec,
+) => {
+    type ConfigType = z.infer<Spec["config_schema"]>;
+
     const router = new Hono()
         // Run Graph
         .post(
@@ -14,7 +19,7 @@ export const statelessRunsRouter = (graphSpec: GraphServerConfiguration) => {
                 z.object({
                     state: z.record(z.unknown()).optional(),
                     resumeValue: z.unknown().optional(),
-                    config: z.record(z.unknown()).optional(),
+                    config: graphSpec.config_schema as z.ZodType<ConfigType>,
                     assistant_id: z.string().optional(),
                 }).refine((data) => !(data.state && data.resumeValue), {
                     message: "Cannot provide both state and resumeValue",
@@ -27,7 +32,7 @@ export const statelessRunsRouter = (graphSpec: GraphServerConfiguration) => {
                         .json();
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
-                    );
+                    ) as GraphManager<Spec>;
 
                     const result = await graphManager.invokeGraph({
                         state,

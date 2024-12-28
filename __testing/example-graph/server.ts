@@ -16,10 +16,12 @@ export type AppType = typeof server;
 import { hc } from "hono/client";
 const client = hc<AppType>("/");
 
-const foo = await (await client.threads[":threadId"].$get({
-    param: {
-        threadId: "asdf",
+const foo = await (await client["stateless-runs"].run.$post({
+    json: {
+        config: {},
     },
 })).json();
 
-foo.thread.values;
+if (foo.success) {
+    foo.values;
+}

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { GraphManager } from "../graph";
-import { GraphDefinition } from "../../__testing/test-graph";
+import { testGraphSpecification } from "../../__testing/test-graph";
 import { HumanMessage } from "@langchain/core/messages";
 import { SQLiteAppStorage } from "../storage/sqlite";
 
-const TestGraphDef = GraphDefinition;
+const TestGraphDef = testGraphSpecification;
 
 describe("GraphStateManager", () => {
   let graphManager: GraphManager<typeof TestGraphDef>;
@@ -25,6 +25,7 @@ describe("GraphStateManager", () => {
         description: "test assistant",
         config: TestGraphDef.default_config!,
       });
+
       expect(assistant).toBeDefined();
       expect(assistant.graph_name).toBe(TestGraphDef.name);
       expect(assistant.description).toBe("test assistant");
@@ -38,6 +39,7 @@ describe("GraphStateManager", () => {
         config: TestGraphDef.default_config!,
       });
       const thread = await graphManager.createThread(assistant.id);
+
       expect(thread).toBeDefined();
       expect(thread.assistant_id).toBe(assistant.id);
       expect(thread.values).toBeUndefined();

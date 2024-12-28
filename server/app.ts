@@ -17,8 +17,8 @@ import { mergeRoutes, type Module } from "./lib/hono/helpers.ts";
  * @param config Optional server configuration
  * @returns Configured Hono app instance
  */
-const createGraphServer = (
-  graphConfig: GraphServerConfiguration, // TGraphDefs,
+const createGraphServer = <Spec extends GraphServerConfiguration>(
+  graphConfig: Spec, // TGraphDefs,
   appStorage?: AppStorage,
   checkpointer?: BaseCheckpointSaver,
 ) => {
@@ -45,10 +45,10 @@ const createGraphServer = (
   //   });
   // }
 
-  const app = new Hono<AppBindings>()
-    .route("/threads", threadsRouter(graphConfig))
-    .route("/assistants", assistantsRouter(graphConfig))
-    .route("/stateless-runs", statelessRunsRouter(graphConfig));
+  const app = new Hono()
+    // .route("/threads", threadsRouter(graphConfig))
+    // .route("/assistants", assistantsRouter(graphConfig))
+    .route("/stateless-runs", statelessRunsRouter<Spec>(graphConfig));
 
   // const fin = [...graph_routers] as const satisfies Module[];
 
