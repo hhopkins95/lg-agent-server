@@ -12,8 +12,15 @@
  * ```
  */
 
-import { BaseMessage, SystemMessage } from "@langchain/core/messages";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
+import { z } from "zod";
+
+export const MessageSchema = z.object({
+    role: z.enum(["user", "assistant", "system"]),
+    content: z.string(),
+});
+
+export type Message = z.infer<typeof MessageSchema>;
 
 /**
  * Messages annotation that allows messages to be mounted at a different key that 'messages'
@@ -21,7 +28,7 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
  * @param key
  * @returns
  */
-export const CustomMessagesAnnotation = Annotation<BaseMessage[]>({
-    reducer: messagesStateReducer,
-    // default: () => [SystemMessage],
+export const CustomMessagesAnnotation = Annotation<Message[]>({
+    reducer: (x, y) => x.concat(y),
+    default: () => [],
 });

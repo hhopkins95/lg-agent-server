@@ -1,4 +1,4 @@
-import { GraphDefinition } from "@/__test_agents/test-graph";
+import { GraphDefinition } from "@/__testing/test-graph";
 import type { GraphServerProp } from "../types";
 import CreateGraphServer from "../app";
 

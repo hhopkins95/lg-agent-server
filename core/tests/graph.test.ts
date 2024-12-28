@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { GraphStateManager } from "../graph";
-import { GraphDefinition } from "../../__test_agents/test-graph";
+import { GraphDefinition } from "../../__testing/test-graph";
 import { HumanMessage } from "@langchain/core/messages";
 import { SQLiteAppStorage } from "../storage/sqlite";
 

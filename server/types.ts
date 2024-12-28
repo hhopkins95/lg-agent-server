@@ -44,11 +44,11 @@ export type GraphServerConfiguration<
  * Resolves to `never` if the schemas do not match and should trigger a compiler error
  */
 export type GraphServerProp<
-  TInputAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TInputSchema extends z.ZodType,
-  TOutputAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TConfigAnnotation extends TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
-  TConfigSchema extends z.ZodType,
+  TInputAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+  TInputSchema extends z.ZodType = z.ZodType,
+  TOutputAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+  TConfigAnnotation extends TAnnotation = TAnnotation, // ReturnType<typeof Annotation.Root<any>>,
+  TConfigSchema extends z.ZodType = z.ZodType,
 > = StrictValidateStateTypes<TInputAnnotation, TInputSchema> extends never
   ? never
   : StrictValidateStateTypes<TConfigAnnotation, TConfigSchema> extends never

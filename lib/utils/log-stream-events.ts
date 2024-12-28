@@ -1,4 +1,4 @@
-export const logStremEvent = (event: Record<string, any>) => {
+export const logStreamEvent = (event: Record<string, any>) => {
     const key = Object.keys(event)[0];
     if (key) {
         console.log(`Event: ${key}`);

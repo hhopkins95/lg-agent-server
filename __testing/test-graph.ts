@@ -7,7 +7,8 @@ import {
 import { CreateGraphDef } from "@/core/graph";
 import { getLLM } from "@/lib/models/loadLLM";
 import { z } from "zod";
-import { BaseMessage, HumanMessage } from "@langchain/core/messages";
+import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
+import { CustomMessagesAnnotation } from "@/lib";
 
 //  CONFIGURATION
 const GraphConfigurationAnnotation = Annotation.Root({
@@ -19,7 +20,7 @@ const defaultConfig: typeof GraphConfigurationAnnotation.State = {
 
 // STATE
 const GraphStateAnnotation = Annotation.Root({
-    ...MessagesAnnotation.spec,
+    messages: CustomMessagesAnnotation,
     count: Annotation<number>, // example number property -- counts how many times the model has been called
 });
 
@@ -51,10 +52,10 @@ async function callModel(
     const result = await llm.invoke(state.messages, {
         tags: ["messages"],
     });
+    const foo = result.content;
     console.log("Stream Process Complete");
     return {
         count: state.count + 1,
-        messages: result,
     };
 }
 
