@@ -12,3 +12,10 @@ const testGraphServer: GraphServerConfiguration = {
 };
 
 export const server = createGraphServer([testGraphServer]);
+
+export type AppType = typeof server;
+import { hc } from 'hono/client'
+const client = hc<AppType>('http://localhost:8787/')
+
+
+const foo = await client.
