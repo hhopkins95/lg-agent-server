@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
+import type { GraphStateManager } from "@/core";
 
 export const threadsRouter: GraphRouter = (graphSpec) => {
     const router = new Hono();
@@ -19,7 +20,9 @@ export const threadsRouter: GraphRouter = (graphSpec) => {
         async (c) => {
             try {
                 const { assistant_id } = await c.req.json();
-                const graphManager = GRAPH_REGISTRY.getManager(graphSpec.name);
+                const graphManager = GRAPH_REGISTRY.getManager(
+                    graphSpec.name,
+                ) as GraphStateManager<typeof graphSpec>;
                 const thread = await graphManager.createThread(assistant_id);
                 return c.json({
                     thread,

@@ -79,7 +79,5 @@ export const GraphDefinition = CreateGraphDef({
     input_annotation: GraphStateAnnotation,
     output_annotation: GraphStateAnnotation,
     default_config: defaultConfig,
-    // input_keys: inputKeys,
-    // output_keys: outputKeys,
     state_llm_stream_keys: streamStateKeys,
 });
