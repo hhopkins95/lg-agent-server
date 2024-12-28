@@ -1,5 +1,5 @@
 import { GraphDefinition } from "@/__testing/test-graph";
 import type { GraphServerProp } from "../types";
-import CreateGraphServer from "../app";
+import createGraphServer from "../app";
 
 // const graphServerConfig :

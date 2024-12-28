@@ -14,7 +14,7 @@ import type { GraphServerConfiguration } from "./types.ts";
  * @param config Optional server configuration
  * @returns Configured Hono app instance
  */
-const CreateGraphServer = (
+const createGraphServer = (
   graphDefs: GraphServerConfiguration[],
   appStorage?: AppStorage,
   checkpointer?: BaseCheckpointSaver,
@@ -40,4 +40,4 @@ const CreateGraphServer = (
   return app;
 };
 
-export default CreateGraphServer;
+export default createGraphServer;
