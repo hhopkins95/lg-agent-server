@@ -1,4 +1,4 @@
-import type { TInterrupt } from "@/lib/utils/interrupt-graph";
+import type { TInterrupt } from "@/lib/graph-utils/interrupt-graph";
 import type {
   AIMessageChunk,
   ToolMessageChunk,

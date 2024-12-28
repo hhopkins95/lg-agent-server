@@ -1,6 +1,5 @@
 import type { z } from "@hono/zod-openapi";
 import type { Annotation } from "@langchain/langgraph";
-import { assert, type Equals } from "tsafe";
 
 /**
  * Strictly checks if two types are exactly equal.

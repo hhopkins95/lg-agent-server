@@ -18,7 +18,7 @@ import {
   MemorySaver,
 } from "@langchain/langgraph";
 import { SQLiteAppStorage } from "./storage/sqlite.ts";
-import type { TInterrupt } from "@/lib/utils/interrupt-graph.ts";
+import type { TInterrupt } from "@/lib/graph-utils/interrupt-graph.ts";
 import { DEFAULT_ASSISTANT_ID } from "./constants.ts";
 import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
 
