@@ -14,7 +14,7 @@ export type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
 /**
  * Graph Def
  */
-export type TGraphDef<
+export type TGraphSpecification<
   TInputAnnotation extends TAnnotation = TAnnotation,
   TOutputAnnotation extends TAnnotation = TAnnotation,
   TConfigAnnotation extends TAnnotation = TAnnotation,
@@ -86,7 +86,7 @@ export type TThreadStatus = {
 };
 
 // METHOD TYPES
-export type TGetRunConfigParams<TGraph extends TGraphDef> = {
+export type TGetRunConfigParams<TGraph extends TGraphSpecification> = {
   assistant_id?: string;
   thread_id?: string;
   config?: TGraph["config_annotation"]["State"];
@@ -102,16 +102,16 @@ export type LLMStreamMeta = {
   thread_id?: string;
   langgraph_step?: number;
 };
-export type TStreamYield<TGraph extends TGraphDef> = {
+export type TStreamYield<TGraph extends TGraphSpecification> = {
   full_state_update?: TThread<TGraph["output_annotation"]>["values"];
   status_change?: TThread<TGraph["input_annotation"]>["status"];
   state_llm_stream_data?: {
-    key: TGraph extends TGraphDef<any, any, infer K, any> ? K : never;
+    key: TGraph extends TGraphSpecification<any, any, infer K, any> ? K : never;
     chunk: AIMessageChunk | ToolMessageChunk;
     meta: LLMStreamMeta;
   };
   other_llm_stream_data?: {
-    key: TGraph extends TGraphDef<any, any, any, infer K> ? K : never;
+    key: TGraph extends TGraphSpecification<any, any, any, infer K> ? K : never;
     chunk: AIMessageChunk | ToolMessageChunk;
     meta: LLMStreamMeta;
   };

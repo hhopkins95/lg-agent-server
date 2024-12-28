@@ -3,7 +3,7 @@ import type {
   TAnnotation,
   TAssistant,
   TGetRunConfigParams,
-  TGraphDef,
+  TGraphSpecification,
   TStreamYield,
   TThread,
 } from "./types.ts";
@@ -25,7 +25,7 @@ import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
 /**
  *  Applies type constraints when creating a graph definitiaon
  */
-export function CreateGraphDef<
+export function CreateGraphSpecification<
   TInputAnnotation extends TAnnotation,
   TOutputAnnotation extends TAnnotation,
   TConfigAnnotation extends TAnnotation,
@@ -33,7 +33,7 @@ export function CreateGraphDef<
     keyof TInputAnnotation["State"],
   TOtherStreamKeys extends string = string,
 >(
-  def: TGraphDef<
+  def: TGraphSpecification<
     TInputAnnotation,
     TOutputAnnotation,
     TConfigAnnotation,
@@ -64,7 +64,7 @@ export function CreateGraphDef<
  *
  * @template TGraph - The graph definition type that specifies state and config annotations
  */
-export class GraphStateManager<TGraph extends TGraphDef> {
+export class GraphManager<TGraph extends TGraphSpecification> {
   protected appStorage: AppStorage<
     TGraph["config_annotation"],
     TGraph["output_annotation"]
@@ -472,7 +472,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
               state_llm_stream_data: {
                 // @ts-expect-error TODO -- Fix this?lkk
                 key: state_key as TGraph extends
-                  TGraphDef<any, any, any, infer K, any> ? K : never,
+                  TGraphSpecification<any, any, any, infer K, any> ? K : never,
                 chunk,
                 meta,
               },
@@ -491,7 +491,7 @@ export class GraphStateManager<TGraph extends TGraphDef> {
             yield {
               other_llm_stream_data: {
                 key: other_key as TGraph extends
-                  TGraphDef<any, any, any, infer K> ? K : never,
+                  TGraphSpecification<any, any, any, infer K> ? K : never,
                 chunk,
                 meta,
               },

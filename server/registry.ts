@@ -1,5 +1,5 @@
-import type { TGraphDef } from "@/core/types";
-import { GraphStateManager } from "@/core/graph";
+import type { TGraphSpecification } from "@/core/types";
+import { GraphManager } from "@/core/graph";
 import { SQLiteAppStorage } from "@/core/storage/sqlite";
 import { FileSystemAppStorage } from "@/core/storage/filesystem";
 import type { AppStorage } from "@/core/storage/types";
@@ -11,7 +11,7 @@ import { BaseCheckpointSaver, MemorySaver } from "@langchain/langgraph";
  */
 class GraphRegistry {
   private static instance: GraphRegistry;
-  private GraphManagers: Map<string, GraphStateManager<any>>;
+  private GraphManagers: Map<string, GraphManager<any>>;
 
   private constructor() {
     this.GraphManagers = new Map();
@@ -33,7 +33,7 @@ class GraphRegistry {
    * @param dataPath Optional data path for storage -- if provided, will use a file store
    * @throws Error if a manager for this graph already exists
    */
-  public async registerGraphManager<TGraph extends TGraphDef>(
+  public async registerGraphManager<TGraph extends TGraphSpecification>(
     graph: TGraph,
     appStorage?: AppStorage,
     checkpointer?: BaseCheckpointSaver,
@@ -42,7 +42,7 @@ class GraphRegistry {
       throw new Error(`Graph manager for ${graph.name} already exists`);
     }
 
-    const manager = new GraphStateManager(
+    const manager = new GraphManager(
       graph,
       appStorage,
       checkpointer,
@@ -58,7 +58,7 @@ class GraphRegistry {
    * @returns The graph manager instance
    * @throws Error if the manager does not exist
    */
-  public getManager(name: string): GraphStateManager<any> {
+  public getManager(name: string): GraphManager<any> {
     const manager = this.GraphManagers.get(name);
     if (!manager) {
       throw new Error(`Graph manager for ${name} not found`);
@@ -77,7 +77,7 @@ class GraphRegistry {
   /**
    * Get all registered graph managers
    */
-  public getAllGraphManagers(): GraphStateManager<any>[] {
+  public getAllGraphManagers(): GraphManager<any>[] {
     return Array.from(this.GraphManagers.values());
   }
 

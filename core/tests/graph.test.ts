@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { GraphStateManager } from "../graph";
+import { GraphManager } from "../graph";
 import { GraphDefinition } from "../../__testing/test-graph";
 import { HumanMessage } from "@langchain/core/messages";
 import { SQLiteAppStorage } from "../storage/sqlite";
@@ -7,11 +7,11 @@ import { SQLiteAppStorage } from "../storage/sqlite";
 const TestGraphDef = GraphDefinition;
 
 describe("GraphStateManager", () => {
-  let graphManager: GraphStateManager<typeof TestGraphDef>;
+  let graphManager: GraphManager<typeof TestGraphDef>;
 
   beforeEach(async () => {
     // Initialize graph manager with SQLite storage
-    graphManager = new GraphStateManager(
+    graphManager = new GraphManager(
       TestGraphDef,
       new SQLiteAppStorage(":memory:"),
     );

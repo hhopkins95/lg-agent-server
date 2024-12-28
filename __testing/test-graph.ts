@@ -4,7 +4,7 @@ import {
     MessagesAnnotation,
     StateGraph,
 } from "@langchain/langgraph";
-import { CreateGraphDef } from "@/core/graph";
+import { CreateGraphSpecification } from "@/core/graph";
 import { getLLM } from "@/lib/models/loadLLM";
 import { z } from "zod";
 import { AIMessage, BaseMessage, HumanMessage } from "@langchain/core/messages";
@@ -73,7 +73,7 @@ const workflow = new StateGraph(
 
 const graph = workflow.compile();
 
-export const GraphDefinition = CreateGraphDef({
+export const GraphDefinition = CreateGraphSpecification({
     graph,
     name: "test_graph",
     config_annotation: GraphConfigurationAnnotation,

@@ -1,4 +1,4 @@
-import type { TGraphDef } from "@/core/types.ts";
+import type { TGraphSpecification } from "@/core/types.ts";
 import type { StrictValidateStateTypes } from "@/lib/utils/type-helpers";
 import { z } from "@hono/zod-openapi";
 import { Annotation } from "@langchain/langgraph";
@@ -22,7 +22,7 @@ export type GraphServerConfiguration<
     keyof TInputAnnotation["State"],
   TOtherStreamableKeys extends string = string,
 > =
-  & TGraphDef<
+  & TGraphSpecification<
     TInputAnnotation,
     TOutputAnnotation,
     TConfigAnnotation,
