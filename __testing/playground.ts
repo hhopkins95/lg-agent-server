@@ -2,7 +2,7 @@
  * For random tests / quick debugging
  */
 
-import { getLLM } from "@/lib";
+import { getLLM } from "@/lib/models";
 import { HumanMessage } from "@langchain/core/messages";
 
 const llm = getLLM("qwen2_5__05b");

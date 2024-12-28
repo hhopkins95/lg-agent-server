@@ -1,6 +1,6 @@
-import type { GraphRouter, GraphServerConfiguration } from "@/server/types.ts";
-import { Hono } from "hono";
+import type { GraphRouter } from "@/server/types.ts";
 import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
 
