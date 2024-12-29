@@ -4,7 +4,7 @@ import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
 import { createBaseApp } from "@/server/create-base-app.ts";
-import { hc } from "hono/client";
+import { GRAPH_REGISTRY } from "@/server/registry.ts";
 
 export const testGraphServerSpec = {
     ...graphSpecification,
@@ -14,6 +14,9 @@ export const testGraphServerSpec = {
 } as const satisfies GraphServerConfiguration;
 
 const testGraphServer = createGraphHonoServer(testGraphServerSpec);
+
+// Register the graph with the registry
+GRAPH_REGISTRY.registerGraphManager(testGraphServerSpec);
 
 export const TEST_GRAPH_APP = createBaseApp().route(
     `/test-graph`,
