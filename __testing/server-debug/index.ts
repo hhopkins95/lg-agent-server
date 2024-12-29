@@ -6,7 +6,9 @@ import { Hono } from "hono";
 import { hc } from "hono/client";
 import { z } from "zod";
 
+// Base types
 type TAnnotation = ReturnType<typeof Annotation.Root<any>>;
+
 type TTestGraphSpec<
     Res extends TAnnotation = TAnnotation,
     Input extends z.ZodSchema = z.ZodSchema,
@@ -16,6 +18,7 @@ type TTestGraphSpec<
     input_schema: Input;
     output_annotation: Res;
 };
+
 const simulateApiCall = async <ResType>() => {
     const response = await fetch("http://localhost:8080/test", {
         method: "POST",
@@ -32,50 +35,68 @@ const someAnnotation = Annotation.Root({
     abc: Annotation<number>(),
 });
 const someSchema = z.object({
-    abc: z.number(),
+    schema: z.number(),
 });
 
-type AnnotationType = typeof someAnnotation["State"];
-
-const Spec: TTestGraphSpec = {
+const Spec = {
     config_schema: someSchema,
     input_schema: someSchema,
     output_annotation: someAnnotation,
-};
+} as const satisfies TTestGraphSpec;
 
-const getExampleRouter = <
-    TSpec extends TTestGraphSpec,
-    TRes extends TSpec["output_annotation"]["State"],
->(
-    spec: TSpec,
+const getExampleRouter = <Input extends z.ZodSchema, Output>(
+    inputSchema: Input,
+    outputType: Output,
 ) => {
-    return new Hono().post(
-        "/test",
-        zValidator(
-            "json",
-            spec.input_schema,
-        ),
-        async (c) => {
-            const response = await simulateApiCall<TRes>();
-            return c.json({ response }); // as TRes;
-        },
-    );
+    return new Hono()
+        .post("/", zValidator("json", inputSchema), async (c) => {
+            const response = await simulateApiCall<Output>();
+            return c.json({ response });
+        });
 };
 
-const createApp = <
-    TSpec extends TTestGraphSpec,
-    TRes extends TSpec["output_annotation"]["State"],
->(spec: TSpec) =>
-    new Hono().route(
-        "/test",
-        getExampleRouter<TSpec, TRes>(spec),
-    );
-const app = createApp(Spec);
+const createApp = <Input extends z.ZodSchema, Output>(
+    inputSchema: Input,
+    outputType: Output,
+    spec: TTestGraphSpec,
+) => {
+    const router = getExampleRouter<Input, Output>(inputSchema, outputType);
+    return new Hono().route("/test", router);
+};
+
+const app = createApp(
+    Spec.input_schema,
+    Spec.output_annotation.State,
+    Spec,
+);
 type AppType = typeof app;
 const client = hc<AppType>("/");
 
-const res = await client.test.test.$post({
-    json: {}, // No type completions here for the input type
+// Now these should be properly typed
+const res = await client.test.$post({
+    json: { abc: 123 }, // Should have type completion for abc: number
 });
 
-const val = await res.json(); // Not proper type here either -- should be response :{abc : number}, but is   response: {[x: string]: any;}
+const val = await res.json(); // Should be typed as { response: { abc: number } }
+
+const createAppFromSpec = <
+    T extends TTestGraphSpec,
+    InSchema extends T["input_schema"] = T["input_schema"],
+>(spec: T) => {
+    const res = createApp<
+        InSchema,
+        T["output_annotation"]["State"]
+    >(
+        spec.input_schema as InSchema,
+        spec.output_annotation.State,
+        spec,
+    );
+    return res;
+};
+
+const app2 = createAppFromSpec(Spec);
+type App2Type = typeof app2;
+const client2 = hc<App2Type>("/");
+const res2 = await client2.test.$post({
+    json: {},
+});
