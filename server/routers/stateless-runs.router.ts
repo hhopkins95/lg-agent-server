@@ -7,14 +7,10 @@ import type { GraphManager } from "@/core";
 
 export const statelessRunsRouter = <
     GraphSpec extends GraphServerConfiguration,
-    GraphInputSchema extends z.ZodSchema,
-    GraphConfigSchema extends z.ZodSchema,
-    OutputType extends Record<string, unknown> =
-        GraphSpec["output_annotation"]["State"],
 >(
     graphSpec: GraphSpec,
-    graphInputSchema: GraphInputSchema,
-    graphConfigSchema: GraphConfigSchema,
+    // graphInputSchema: GraphInputSchema,
+    // graphConfigSchema: GraphConfigSchema,
 ) => {
     return new Hono()
         // Run Graph
@@ -23,9 +19,10 @@ export const statelessRunsRouter = <
             zValidator(
                 "json",
                 z.object({
-                    state: graphInputSchema,
+                    state: graphSpec.input_schema as GraphSpec["input_schema"],
                     //          resumeValue: z.unknown().optional(),
-                    // config: graphConfigSchema,
+                    config: graphSpec
+                        .config_schema as GraphSpec["config_schema"],
                     //         assistant_id: z.string().optional(),
                 }),
             ),

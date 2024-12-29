@@ -22,23 +22,22 @@ import { z } from "zod";
  */
 const createGraphServer = <
   Spec extends GraphServerConfiguration,
-  GraphInputSchema extends z.ZodType,
-  GraphConfigSchema extends z.ZodType,
->(
+> // GraphInputSchema extends z.ZodType,
+// GraphConfigSchema extends z.ZodType,
+(
   graphConfig: Spec, // TGraphDefs,
-  graphInputSchema: GraphInputSchema,
-  graphConfigSchema: GraphConfigSchema,
+  // graphInputSchema: GraphInputSchema,
+  // graphConfigSchema: GraphConfigSchema,
   appStorage?: AppStorage,
   checkpointer?: BaseCheckpointSaver,
 ) => {
   const statelessRuns = statelessRunsRouter<
-    Spec,
-    GraphInputSchema,
-    GraphConfigSchema
-  >(
+    Spec
+  > // GraphInputSchema
+  // GraphConfigSchema
+  (
     graphConfig,
-    graphInputSchema,
-    graphConfigSchema,
+    // graphConfigSchema,
   );
 
   return new Hono()
@@ -54,14 +53,24 @@ export default createGraphServer;
 
 const app = createGraphServer(
   testGraphServerSpec,
-  testGraphServerSpec.input_schema,
-  testGraphServerSpec.config_schema,
+  // testGraphServerSpec.input_schema,
+  // testGraphServerSpec.config_schema,
 );
 
 type AppType = typeof app;
 const client = hc<AppType>("/");
 const res = await client["stateless-runs"].run.$post({
-  json: {},
+  json: {
+    config: {
+      config_value: "default_config",
+    },
+    state: {
+      input: {
+        content: "hell",
+      },
+    },
+    // co
+  },
 });
 const vals = await res.json();
 
