@@ -4,24 +4,24 @@ import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
 
-const testGraphServer: GraphServerConfiguration = {
+export const testGraphServerSpec: GraphServerConfiguration = {
     ...graphSpecification,
     config_schema: ConfigurationSchema,
     input_schema: InputSchema,
     default_config: defaultConfig,
 };
 
-export const server = createGraphServer<typeof testGraphServer>(
-    testGraphServer,
-);
-export type AppType = typeof server;
-import { hc } from "hono/client";
-const client = hc<AppType>("/");
+// export const testGraphServerSpec = createGraphServer<typeof testGraphServer>(
+//     testGraphServer,
+// );
+// export type AppType = typeof testGraphServerSpec;
+// import { hc } from "hono/client";
+// const client = hc<AppType>("/");
 
-const foo = await (await client["stateless-runs"].run.$post({
-    json: {},
-})).json();
+// const foo = await (await client["stateless-runs"].run.$post({
+//     json: {},
+// })).json();
 
-if (foo.success) {
-    foo.values;
-}
+// if (foo.success) {
+//     foo.values;
+// }
