@@ -3,6 +3,8 @@ import type { GraphServerConfiguration } from "@/server/types";
 import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
+import { createBaseApp } from "@/server/create-base-app.ts";
+import { hc } from "hono/client";
 
 export const testGraphServerSpec = {
     ...graphSpecification,
@@ -11,17 +13,10 @@ export const testGraphServerSpec = {
     default_config: defaultConfig,
 } as const satisfies GraphServerConfiguration;
 
-// export const testGraphServerSpec = createGraphServer<typeof testGraphServer>(
-//     testGraphServer,
-// );
-// export type AppType = typeof testGraphServerSpec;
-// import { hc } from "hono/client";
-// const client = hc<AppType>("/");
+const testGraphServer = createGraphHonoServer(testGraphServerSpec);
 
-// const foo = await (await client["stateless-runs"].run.$post({
-//     json: {},
-// })).json();
-
-// if (foo.success) {
-//     foo.values;
-// }
+export const TEST_GRAPH_APP = createBaseApp().route(
+    `/test-graph`,
+    testGraphServer,
+);
+export type AppType = typeof TEST_GRAPH_APP;
