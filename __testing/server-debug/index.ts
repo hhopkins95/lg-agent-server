@@ -14,7 +14,7 @@ type TTestGraphSpec<
 > = {
     config_schema: Config;
     input_schema: Input;
-    return_type: Res;
+    output_annotation: Res;
 };
 const simulateApiCall = async <ResType>() => {
     const response = await fetch("http://localhost:8080/test", {
@@ -35,14 +35,17 @@ const someSchema = z.object({
     abc: z.number(),
 });
 
+type AnnotationType = typeof someAnnotation["State"];
+
 const Spec: TTestGraphSpec = {
     config_schema: someSchema,
     input_schema: someSchema,
-    return_type: someAnnotation,
+    output_annotation: someAnnotation,
 };
 
 const getExampleRouter = <
     TSpec extends TTestGraphSpec,
+    TRes extends TSpec["output_annotation"]["State"],
 >(
     spec: TSpec,
 ) => {
@@ -53,23 +56,26 @@ const getExampleRouter = <
             spec.input_schema,
         ),
         async (c) => {
-            const response = await simulateApiCall<TSpec["return_type"]>();
+            const response = await simulateApiCall<TRes>();
             return c.json({ response }); // as TRes;
         },
     );
 };
 
-const createApp = (spec: TTestGraphSpec) =>
+const createApp = <
+    TSpec extends TTestGraphSpec,
+    TRes extends TSpec["output_annotation"]["State"],
+>(spec: TSpec) =>
     new Hono().route(
         "/test",
-        getExampleRouter(spec),
+        getExampleRouter<TSpec, TRes>(spec),
     );
 const app = createApp(Spec);
 type AppType = typeof app;
 const client = hc<AppType>("/");
 
 const res = await client.test.test.$post({
-    json: {},
+    json: {}, // No type completions here for the input type
 });
 
-const val = await res.json();
+const val = await res.json(); // Not proper type here either -- should be response :{abc : number}, but is   response: {[x: string]: any;}
