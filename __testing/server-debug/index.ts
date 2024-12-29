@@ -49,10 +49,14 @@ const getExampleRouter = <Input extends z.ZodSchema, Output>(
     outputType: Output,
 ) => {
     return new Hono()
-        .post("/", zValidator("json", inputSchema), async (c) => {
-            const response = await simulateApiCall<Output>();
-            return c.json({ response });
-        });
+        .post(
+            "/",
+            zValidator("json", z.object({ input: inputSchema })),
+            async (c) => {
+                const response = await simulateApiCall<Output>();
+                return c.json({ response });
+            },
+        );
 };
 
 const createApp = <Input extends z.ZodSchema, Output>(
@@ -74,7 +78,7 @@ const client = hc<AppType>("/");
 
 // Now these should be properly typed
 const res = await client.test.$post({
-    json: { abc: 123 }, // Should have type completion for abc: number
+    json: { input: { schema: 123 } }, // Should have type completion for abc: number
 });
 
 const val = await res.json(); // Should be typed as { response: { abc: number } }

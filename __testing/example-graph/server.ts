@@ -4,12 +4,12 @@ import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
 
-export const testGraphServerSpec: GraphServerConfiguration = {
+export const testGraphServerSpec = {
     ...graphSpecification,
     config_schema: ConfigurationSchema,
     input_schema: InputSchema,
     default_config: defaultConfig,
-};
+} as const satisfies GraphServerConfiguration;
 
 // export const testGraphServerSpec = createGraphServer<typeof testGraphServer>(
 //     testGraphServer,
