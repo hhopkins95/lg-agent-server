@@ -5,6 +5,7 @@ import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
 import { createBaseApp } from "@/server/create-base-app.ts";
 import { GRAPH_REGISTRY } from "@/server/registry.ts";
+import { hc } from "hono/client";
 
 export const testGraphServerSpec = {
     ...graphSpecification,
@@ -23,3 +24,19 @@ export const TEST_GRAPH_APP = createBaseApp().route(
     testGraphServer,
 );
 export type AppType = typeof TEST_GRAPH_APP;
+
+// test client
+const client = hc<AppType>("/test-graph");
+
+const stream = await client["test-graph"]["stateless-runs"].stream.$get({
+    json: {
+        config: {
+            config_value: "",
+        },
+        state: {
+            input: {
+                content: "",
+            },
+        },
+    },
+});

@@ -1,5 +1,6 @@
 import type { GraphRouter, GraphServerConfiguration } from "@/server/types.ts";
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
@@ -48,7 +49,7 @@ export const statelessRunsRouter = <
             },
         )
         // Stream Graph
-        .post(
+        .get(
             "/stream",
             zValidator(
                 "json",
@@ -71,39 +72,26 @@ export const statelessRunsRouter = <
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
 
-                    return new Response(
-                        new ReadableStream({
-                            async start(controller) {
-                                try {
-                                    const stream = graphManager.streamGraph({
-                                        state,
-                                        resumeValue,
-                                        config,
-                                        assistant_id,
-                                    });
+                    return streamSSE(c, async (stream) => {
+                        const graphStream = graphManager.streamGraph({
+                            state,
+                            resumeValue,
+                            config,
+                            assistant_id,
+                        });
 
-                                    for await (const update of stream) {
-                                        const data = `data: ${
-                                            JSON.stringify(update)
-                                        }\n\n`;
-                                        controller.enqueue(
-                                            new TextEncoder().encode(data),
-                                        );
-                                    }
-                                    controller.close();
-                                } catch (error) {
-                                    controller.error(error);
-                                }
-                            },
-                        }),
-                        {
-                            headers: {
-                                "Content-Type": "text/event-stream",
-                                "Cache-Control": "no-cache",
-                                "Connection": "keep-alive",
-                            },
-                        },
-                    );
+                        for await (const update of graphStream) {
+                            await stream.writeSSE({
+                                data: JSON.stringify(update),
+                            });
+                        }
+                    }, async (err, stream) => {
+                        console.error(err);
+                        await stream.writeSSE({
+                            data: JSON.stringify({ error: err.message }),
+                            event: "error",
+                        });
+                    });
                 } catch (error) {
                     c.status(500);
                     throw error;
