@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import notFound from "./middlewares/not-found.ts";
-import { onError } from "./middlewares/on-error.ts";
-import { pinoLogger } from "./middlewares/pino-logger.ts";
-import serveEmojiFavicon from "./middlewares/serve-emoji-favicon.ts";
-import type { AppBindings } from "./types.ts";
+import notFound from "./lib/hono/middlewares/not-found.ts";
+import { onError } from "./lib/hono/middlewares/on-error.ts";
+import { pinoLogger } from "./lib/hono/middlewares/pino-logger.ts";
+import serveEmojiFavicon from "./lib/hono/middlewares/serve-emoji-favicon.ts";
+import type { AppBindings } from "./lib/hono/types.ts";
 
 /**
  * Creates a hono app with default middlewares and configs
