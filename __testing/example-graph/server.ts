@@ -1,4 +1,4 @@
-import createGraphServer from "@/server/app";
+import createGraphHonoServer from "@/server/app";
 import type { GraphServerConfiguration } from "@/server/types";
 import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
