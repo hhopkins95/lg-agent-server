@@ -18,8 +18,9 @@ export const statelessRunsRouter = <
             zValidator(
                 "json",
                 z.object({
-                    state: graphSpec.input_schema as GraphSpec["input_schema"],
-                    resumeValue: z.unknown().optional(),
+                    graph_input: graphSpec
+                        .input_schema as GraphSpec["input_schema"],
+                    // resumeValue: z.unknown().optional(),
                     config: graphSpec
                         .config_schema as GraphSpec["config_schema"],
                     assistant_id: z.string().optional(),
@@ -27,16 +28,13 @@ export const statelessRunsRouter = <
             ),
             async (c) => {
                 try {
-                    const { state, resumeValue, config, assistant_id } = await c
-                        .req
-                        .json();
+                    const { state, config, assistant_id } = await c.req.json();
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
 
                     const result = await graphManager.invokeGraph({
                         state,
-                        resumeValue,
                         config,
                         assistant_id,
                     });
@@ -55,17 +53,14 @@ export const statelessRunsRouter = <
                 "json",
                 z.object({
                     state: graphSpec.input_schema as GraphSpec["input_schema"],
-                    resumeValue: z.unknown().optional(),
                     config: graphSpec
                         .config_schema as GraphSpec["config_schema"],
                     assistant_id: z.string().optional(),
-                }).refine((data) => !(data.state && data.resumeValue), {
-                    message: "Cannot provide both state and resumeValue",
                 }),
             ),
             async (c) => {
                 try {
-                    const { state, resumeValue, config, assistant_id } = await c
+                    const { state, config, assistant_id } = await c
                         .req
                         .json();
                     const graphManager = GRAPH_REGISTRY.getManager(
@@ -75,7 +70,6 @@ export const statelessRunsRouter = <
                     return streamSSE(c, async (stream) => {
                         const graphStream = graphManager.streamGraph({
                             state,
-                            resumeValue,
                             config,
                             assistant_id,
                         });
