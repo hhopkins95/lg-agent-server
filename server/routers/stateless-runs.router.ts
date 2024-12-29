@@ -20,7 +20,6 @@ export const statelessRunsRouter = <
                 z.object({
                     graph_input: graphSpec
                         .input_schema as GraphSpec["input_schema"],
-                    // resumeValue: z.unknown().optional(),
                     config: graphSpec
                         .config_schema as GraphSpec["config_schema"],
                     assistant_id: z.string().optional(),
