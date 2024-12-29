@@ -10,16 +10,20 @@ export const statelessRunsRouter = <Spec extends GraphServerConfiguration>(
 ) => {
     type ConfigType = z.infer<Spec["config_schema"]>;
 
-    const router = new Hono()
+    return new Hono()
         // Run Graph
         .post(
             "/run",
             zValidator(
                 "json",
                 z.object({
-                    state: z.record(z.unknown()).optional(),
+                    state: graphSpec.input_schema as z.ZodType<
+                        z.infer<Spec["input_schema"]>
+                    >,
                     resumeValue: z.unknown().optional(),
-                    config: graphSpec.config_schema as z.ZodType<ConfigType>,
+                    config: graphSpec.config_schema as z.ZodType<
+                        ConfigType
+                    >,
                     assistant_id: z.string().optional(),
                 }).refine((data) => !(data.state && data.resumeValue), {
                     message: "Cannot provide both state and resumeValue",
@@ -110,6 +114,4 @@ export const statelessRunsRouter = <Spec extends GraphServerConfiguration>(
                 }
             },
         );
-
-    return router;
 };

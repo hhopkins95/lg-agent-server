@@ -10,6 +10,7 @@ import type { GraphServerConfiguration } from "./types.ts";
 import type { MergeSchemaPath } from "hono/types";
 import type { AppBindings } from "./lib/hono/types.ts";
 import { mergeRoutes, type Module } from "./lib/hono/helpers.ts";
+import { hc } from "hono/client";
 
 /**
  * Creates a new graph server with the specified graphs and configuration
@@ -56,6 +57,11 @@ const createGraphServer = <Spec extends GraphServerConfiguration>(
   // const app = mergeRoutes(new Hono(), ...fin);
 
   type AppType = typeof app;
+  const client = hc<AppType>("/");
+  client["stateless-runs"].run.$post({
+    param: "asdf",
+    json: {},
+  }, {});
 
   return app;
 };

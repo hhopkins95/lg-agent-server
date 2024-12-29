@@ -11,15 +11,15 @@ const testGraphServer: GraphServerConfiguration = {
     default_config: defaultConfig,
 };
 
-export const server = createGraphServer(testGraphServer);
+export const server = createGraphServer<typeof testGraphServer>(
+    testGraphServer,
+);
 export type AppType = typeof server;
 import { hc } from "hono/client";
 const client = hc<AppType>("/");
 
 const foo = await (await client["stateless-runs"].run.$post({
-    json: {
-        config: {},
-    },
+    json: {},
 })).json();
 
 if (foo.success) {
