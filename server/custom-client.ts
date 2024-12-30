@@ -29,8 +29,8 @@ export const getClient = <Spec extends GraphServerConfiguration>(
     type HonoAppType = ReturnType<typeof createGraphHonoServer<Spec>>;
     const hono_rc = hc<HonoAppType>(url);
 
-    const runStateless = hono_rc["stateless-runs"].run.$post;
-    const runStateless2 = withJsonResponse(runStateless);
+    // Stateless runs router
+    const runStateless = withJsonResponse(hono_rc["stateless-runs"].run.$post);
 
     const streamStateless = async function* (
         input: Parameters<
@@ -67,7 +67,6 @@ export const getClient = <Spec extends GraphServerConfiguration>(
 
     return {
         runStateless,
-        runStateless2,
         streamStateless,
     };
 };

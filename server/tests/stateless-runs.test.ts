@@ -18,20 +18,13 @@ const client = getClient<TestGraphServerSpec>(
 
 console.log("Listening on http://localhost:8080");
 
-// Using raw client method (requires manual .json() call)
-const res = await (await client.runStateless({
-    json: {
-        config: {
-            config_value: "",
-        },
-    },
-})).json();
-
 // Using wrapped method (handles json parsing automatically)
-const res2 = await client.runStateless2({
+const res = await client.runStateless({
     json: {
-        config: {
-            config_value: "",
+        graph_input: {
+            input: {
+                content: "",
+            },
         },
     },
 });
