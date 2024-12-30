@@ -432,6 +432,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
       }
 
       for await (const [eventType, data] of stream) {
+        console.log({ eventType });
         // Handle interrupts
         if (eventType === "custom" && data.type === "interrupt") {
           const interruptData = data.data as TInterrupt;
@@ -458,10 +459,10 @@ export class GraphManager<TGraph extends TGraphSpecification> {
             await this.updateThread(thread_id, {
               values: _data,
             });
-            yield {
-              full_state_update: _data,
-            };
           }
+          yield {
+            full_state_update: _data,
+          };
         }
 
         // Handle LLM stream events

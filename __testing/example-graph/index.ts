@@ -8,6 +8,7 @@ import {
     streamStateKeys,
     TotalStateAnnotation,
 } from "./state";
+import { HumanMessage } from "@langchain/core/messages";
 
 /* NODES */
 async function callModel(
@@ -18,10 +19,12 @@ async function callModel(
 ): Promise<typeof TotalStateAnnotation.Update> {
     console.log("Beginning Test Stream Process...");
     const llm = getLLM("qwen2_5__05b");
-    await llm.invoke(state.messages ?? [], {
+    const input = state.message_input.content;
+    await llm.invoke([new HumanMessage(input)], {
         tags: ["messages"], // tagged as state stream key
     });
     console.log("Stream Process Complete");
+
     return {
         // messages: [result],
         count: (state.count ?? 0) + 1,

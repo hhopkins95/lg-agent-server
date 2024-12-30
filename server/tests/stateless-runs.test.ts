@@ -42,7 +42,14 @@ const stream = await client.streamStateless({
 console.log(res);
 
 for await (const chunk of stream) {
-    console.log(chunk);
+    if (chunk.state_llm_stream_data) {
+        // @ts-expect-error
+        // console.log(chunk.state_llm_stream_data.chunk.kwargs);
+    } else if (chunk.full_state_update) {
+        console.log("Full state update : ", chunk.full_state_update);
+    } else {
+        console.log("SOMETHING ELSE");
+    }
 }
 
 // const foo = await client["stateless-runs"].run.$get({
