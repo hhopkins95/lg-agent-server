@@ -5,20 +5,22 @@ import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
 import type { GraphManager } from "@/core";
 
-export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
+export const threadsRouter = <GraphSpec extends GraphServerConfiguration>(
+    graphSpec: GraphSpec,
+) => {
     const router = new Hono()
         // Create Thread
         .post(
-            "/",
+            "/:assistantId",
             zValidator(
-                "json",
+                "param",
                 z.object({
                     assistant_id: z.string(),
                 }),
             ),
             async (c) => {
                 try {
-                    const { assistant_id } = await c.req.json();
+                    const { assistant_id } = await c.req.valid("param");
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
                     ) as GraphManager<typeof graphSpec>;
@@ -45,11 +47,11 @@ export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
             ),
             async (c) => {
                 try {
-                    const threadId = c.req.param("threadId");
+                    const { threadId } = await c.req.valid("param");
                     const graphManager: GraphManager<typeof graphSpec> =
                         GRAPH_REGISTRY.getManager(
                             graphSpec.name,
-                        );
+                        ) as GraphManager<typeof graphSpec>;
                     const thread = await graphManager.getThread(threadId);
                     if (!thread) {
                         c.status(404);
@@ -75,10 +77,10 @@ export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
             ),
             async (c) => {
                 try {
-                    const assistantId = c.req.param("assistantId");
+                    const { assistantId } = await c.req.valid("param");
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
-                    );
+                    ) as GraphManager<typeof graphSpec>;
                     const threads = await graphManager.listThreads({
                         assistant_id: assistantId,
                     });
