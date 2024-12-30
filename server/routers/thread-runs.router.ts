@@ -1,5 +1,6 @@
 import type { GraphRouter, GraphServerConfiguration } from "@/server/types.ts";
 import { Hono } from "hono";
+import { stream } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
@@ -117,38 +118,28 @@ export const threadRunsRouter = <GraphSpec extends GraphServerConfiguration>(
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
 
-                    return new Response(
-                        new ReadableStream({
-                            async start(controller) {
-                                try {
-                                    const stream = graphManager.streamGraph({
-                                        thread_id: threadId,
-                                        input: graph_input,
-                                        config,
-                                    });
+                    return stream(c, async (stream) => {
+                        const graphStream = graphManager.streamGraph({
+                            thread_id: threadId,
+                            input: graph_input,
+                            config,
+                        });
 
-                                    for await (const update of stream) {
-                                        const data = `data: ${
-                                            JSON.stringify(update)
-                                        }\n\n`;
-                                        controller.enqueue(
-                                            new TextEncoder().encode(data),
-                                        );
-                                    }
-                                    controller.close();
-                                } catch (error) {
-                                    controller.error(error);
-                                }
-                            },
-                        }),
-                        {
-                            headers: {
-                                "Content-Type": "text/event-stream",
-                                "Cache-Control": "no-cache",
-                                "Connection": "keep-alive",
-                            },
-                        },
-                    );
+                        for await (const update of graphStream) {
+                            await stream.write(
+                                new TextEncoder().encode(
+                                    JSON.stringify(update) + "\n",
+                                ),
+                            );
+                        }
+                    }, async (err, stream) => {
+                        console.error(err);
+                        await stream.write(
+                            new TextEncoder().encode(
+                                JSON.stringify({ error: err.message }) + "\n",
+                            ),
+                        );
+                    });
                 } catch (error) {
                     c.status(500);
                     throw error;
@@ -181,40 +172,30 @@ export const threadRunsRouter = <GraphSpec extends GraphServerConfiguration>(
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
 
-                    return new Response(
-                        new ReadableStream({
-                            async start(controller) {
-                                try {
-                                    const stream = graphManager
-                                        .resumeThreadFromInterrupt({
-                                            thread_id: threadId,
-                                            val: resumeValue,
-                                            stream: true,
-                                            config,
-                                        });
+                    return stream(c, async (stream) => {
+                        const graphStream = graphManager
+                            .resumeThreadFromInterrupt({
+                                thread_id: threadId,
+                                val: resumeValue,
+                                stream: true,
+                                config,
+                            });
 
-                                    for await (const update of stream) {
-                                        const data = `data: ${
-                                            JSON.stringify(update)
-                                        }\n\n`;
-                                        controller.enqueue(
-                                            new TextEncoder().encode(data),
-                                        );
-                                    }
-                                    controller.close();
-                                } catch (error) {
-                                    controller.error(error);
-                                }
-                            },
-                        }),
-                        {
-                            headers: {
-                                "Content-Type": "text/event-stream",
-                                "Cache-Control": "no-cache",
-                                "Connection": "keep-alive",
-                            },
-                        },
-                    );
+                        for await (const update of graphStream) {
+                            await stream.write(
+                                new TextEncoder().encode(
+                                    JSON.stringify(update) + "\n",
+                                ),
+                            );
+                        }
+                    }, async (err, stream) => {
+                        console.error(err);
+                        await stream.write(
+                            new TextEncoder().encode(
+                                JSON.stringify({ error: err.message }) + "\n",
+                            ),
+                        );
+                    });
                 } catch (error) {
                     c.status(500);
                     throw error;
