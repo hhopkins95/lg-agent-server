@@ -19,10 +19,6 @@ const createGraphHonoServer = <
   appStorage?: AppStorage,
   checkpointer?: BaseCheckpointSaver,
 ) => {
-  const statelessRuns = statelessRunsRouter(
-    graphConfig,
-  );
-
   return new Hono()
     .route("/threads", threadsRouter(graphConfig))
     .route("/assistants", assistantsRouter(graphConfig))
