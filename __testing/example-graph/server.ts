@@ -19,6 +19,8 @@ export type TestGraphServerSpec = typeof testGraphServerSpec;
 
 const testGraphServer = createGraphHonoServer(testGraphServerSpec);
 
+export type TestServerHonoType = typeof testGraphServer;
+
 // Register the graph with the registry
 GRAPH_REGISTRY.registerGraphManager(testGraphServerSpec);
 
@@ -26,26 +28,3 @@ export const TEST_GRAPH_APP = createBaseApp().route(
     `/test-graph`,
     testGraphServer,
 );
-
-// test client
-// const client = getClient<typeof testGraphServerSpec>("/test-graph"); // hc<AppType>("/test-graph");
-
-// const foo = await client["stateless-runs"].run.$post({
-//     json: {},
-// });
-
-// const stream = await client.streamStateless({
-//     json: {
-//         state: {
-//             input: {
-//                 content: "",
-//             },
-//         },
-//         config: {
-//             config_value: "default_config",
-//         },
-//     },
-// });
-
-// for await (const chunk of stream) {
-// }

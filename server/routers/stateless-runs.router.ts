@@ -13,10 +13,10 @@ export const statelessRunsRouter = <
 ) => {
     return new Hono()
         // Run Graph
-        .get(
+        .post(
             "/run",
             zValidator(
-                "param",
+                "json",
                 z.object({
                     graph_input: (graphSpec
                         .input_schema as GraphSpec["input_schema"]).optional(),
@@ -26,16 +26,19 @@ export const statelessRunsRouter = <
                     assistant_id: z.string().optional(),
                 }),
                 (result, c) => {
-                    console.log("HERE");
                     if (!result.success) {
                         return c.text("Invalid!", 400);
                     }
                 },
             ),
             async (c) => {
+                console.log("running...");
                 try {
-                    const { assistant_id, config, graph_input } = await c.req
-                        .valid("param");
+                    const { assistant_id, config, graph_input } = c.req
+                        .valid("json");
+
+                    console.log("GRAPH INPUT", graph_input, config);
+
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;

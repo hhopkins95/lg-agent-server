@@ -18,12 +18,12 @@ async function callModel(
 ): Promise<typeof TotalStateAnnotation.Update> {
     console.log("Beginning Test Stream Process...");
     const llm = getLLM("qwen2_5__05b");
-    const result = await llm.invoke(state.messages, {
-        tags: ["messages"], // tagged as state stream key
-    });
+    // const result = await llm.invoke(state.messages, {
+    //     tags: ["messages"], // tagged as state stream key
+    // });
     console.log("Stream Process Complete");
     return {
-        messages: [result],
+        // messages: [result],
         count: state.count + 1,
     };
 }

@@ -1,8 +1,10 @@
 import {
     TEST_GRAPH_APP,
     type TestGraphServerSpec,
+    type TestServerHonoType,
 } from "@/__testing/example-graph/server";
 import { getClient } from "../custom-client";
+import { hc } from "hono/client";
 
 // Start the server
 Bun.serve({
@@ -16,17 +18,25 @@ const client = getClient<TestGraphServerSpec>(
 
 console.log("Listening on http://localhost:8080");
 
-const foo = await client.runStateless({
-    param: {
+// Using raw client method (requires manual .json() call)
+const res = await (await client.runStateless({
+    json: {
         config: {
-            config_value: "hello",
+            config_value: "",
         },
-        graph_input: {
-            input: {
-                content: "hello",
-            },
+    },
+})).json();
+
+// Using wrapped method (handles json parsing automatically)
+const res2 = await client.runStateless2({
+    json: {
+        config: {
+            config_value: "",
         },
     },
 });
 
-console.log(foo.body);
+console.log(res);
+// const foo = await client["stateless-runs"].run.$get({
+
+// console.log(foo.body);

@@ -3,6 +3,9 @@ import type { StatusCode } from "hono/utils/http-status";
 import { INTERNAL_SERVER_ERROR, OK } from "../constants/http-status-codes.ts";
 
 export const onError: ErrorHandler = (err, c) => {
+  console.log("ON ERROR", err.message);
+
+  // return;
   const currentStatus = "status" in err
     ? err.status
     : c.newResponse(null).status;

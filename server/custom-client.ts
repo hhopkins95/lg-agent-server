@@ -1,10 +1,27 @@
 // Custom client -- uses app type to assert streaming endpoint return types using EventSource
 
 import { type Hono } from "hono";
-import { hc } from "hono/client";
+import { type ClientResponse, hc } from "hono/client";
 import type createGraphHonoServer from "./create-graph-server.ts";
 import type { GraphServerConfiguration } from "./types";
 import type { TStreamYield } from "../core/types";
+import type { statelessRunsRouter } from "./routers/stateless-runs.router.ts";
+
+type ExtractResponseType<T> = T extends Promise<ClientResponse<infer R>> ? R
+    : never;
+
+const withJsonResponse = <
+    T extends (...args: any[]) => Promise<ClientResponse<any>>,
+>(
+    routeFn: T,
+) => {
+    return async (
+        ...args: Parameters<T>
+    ): Promise<ExtractResponseType<ReturnType<T>>> => {
+        const response = await routeFn(...args);
+        return response.json() as ExtractResponseType<ReturnType<T>>;
+    };
+};
 
 export const getClient = <Spec extends GraphServerConfiguration>(
     url: string,
@@ -12,8 +29,8 @@ export const getClient = <Spec extends GraphServerConfiguration>(
     type HonoAppType = ReturnType<typeof createGraphHonoServer<Spec>>;
     const hono_rc = hc<HonoAppType>(url);
 
-    // functions
-    const runStateless = hono_rc["stateless-runs"].run.$get;
+    const runStateless = hono_rc["stateless-runs"].run.$post;
+    const runStateless2 = withJsonResponse(runStateless);
 
     const streamStateless = async function* (
         input: Parameters<
@@ -50,6 +67,7 @@ export const getClient = <Spec extends GraphServerConfiguration>(
 
     return {
         runStateless,
+        runStateless2,
         streamStateless,
     };
 };
