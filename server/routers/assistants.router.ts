@@ -46,9 +46,7 @@ export const assistantsRouter = <
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
                     const assistant = await graphManager.getAssistant(id);
-                    return c.json({
-                        assistant,
-                    });
+                    return c.json({ assistant });
                 } catch (error) {
                     c.status(500);
                     throw error;
@@ -64,7 +62,8 @@ export const assistantsRouter = <
                     graph_name: z.string(),
                     description: z.string().optional(),
                     metadata: z.record(z.unknown()).optional(),
-                    config: z.record(z.unknown()),
+                    config: graphSpec
+                        .config_schema as GraphSpec["config_schema"],
                 }),
             ),
             async (c) => {
@@ -97,7 +96,8 @@ export const assistantsRouter = <
                 z.object({
                     description: z.string().optional(),
                     metadata: z.record(z.unknown()).optional(),
-                    config: z.record(z.unknown()).optional(),
+                    config: graphSpec
+                        .config_schema as GraphSpec["config_schema"],
                 }),
             ),
             async (c) => {

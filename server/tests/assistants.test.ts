@@ -19,6 +19,11 @@ const client = getClient<TestGraphServerSpec>(
 console.log("Listening on http://localhost:8080");
 
 // Using wrapped method (handles json parsing automatically)
-const res = await client.getAllAssistants();
-
-console.log(res.assistants[0].config);
+const res = await client.updateAssistant({
+    json: {
+        config: {
+            config_value: "new_config",
+        },
+    },
+    param: { id: "test" },
+});
