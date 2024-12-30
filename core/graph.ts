@@ -472,7 +472,6 @@ export class GraphManager<TGraph extends TGraphSpecification> {
             LLMStreamMeta,
           ];
 
-          // console.log(isAIMessageChunk(chunk));
           // Handle state stream keys
           const state_stream_keys = this.graphConfig.state_llm_stream_keys;
           const state_key = getStreamKeyFromMetaTags(
@@ -481,7 +480,6 @@ export class GraphManager<TGraph extends TGraphSpecification> {
           );
 
           if (state_key) {
-            // console.log("AB", chunk);
             yield {
               state_llm_stream_data: {
                 // @ts-expect-error TODO -- Fix this?lkk
