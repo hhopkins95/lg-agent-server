@@ -34,34 +34,45 @@ export const getClient = <Spec extends GraphServerConfiguration>(
 
     const streamStateless = async function* (
         input: Parameters<
-            typeof hono_rc["stateless-runs"]["stream"]["$get"]
+            typeof hono_rc["stateless-runs"]["stream"]["$post"]
         >[0],
     ): AsyncGenerator<TStreamYield<Spec>> {
-        const route_url = hono_rc["stateless-runs"].stream.$url();
+        // @ts-expect-error
+        const response = await hono_rc["stateless-runs"].stream.$post(input);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        const params = new URLSearchParams({
-            // @ts-expect-error
-            ...input?.json,
-        }).toString();
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error("No readable stream available");
+        }
 
-        const eventSource = new EventSource(`${route_url}?${params}`);
+        const decoder = new TextDecoder();
+        let buffer = "";
 
         try {
             while (true) {
-                const message = await new Promise<TStreamYield<Spec>>(
-                    (resolve, reject) => {
-                        eventSource.onmessage = (event) => {
-                            resolve(JSON.parse(event.data));
-                        };
-                        eventSource.onerror = (error) => {
-                            reject(error);
-                        };
-                    },
-                );
-                yield message;
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Keep the last partial line in the buffer
+
+                for (const line of lines) {
+                    if (line.trim()) {
+                        yield JSON.parse(line);
+                    }
+                }
+            }
+
+            // Handle any remaining data
+            if (buffer.trim()) {
+                yield JSON.parse(buffer);
             }
         } finally {
-            eventSource.close();
+            reader.releaseLock();
         }
     };
 

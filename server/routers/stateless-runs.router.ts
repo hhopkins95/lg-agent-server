@@ -1,6 +1,6 @@
 import type { GraphRouter, GraphServerConfiguration } from "@/server/types.ts";
 import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
+import { stream } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
@@ -57,14 +57,15 @@ export const statelessRunsRouter = <
             },
         )
         // Stream Graph
-        .get(
+        .post(
             "/stream",
             zValidator(
                 "json",
                 z.object({
                     state: graphSpec.input_schema as GraphSpec["input_schema"],
-                    config: graphSpec
-                        .config_schema as GraphSpec["config_schema"],
+                    config: (graphSpec
+                        .config_schema as GraphSpec["config_schema"])
+                        .optional(),
                     assistant_id: z.string().optional(),
                 }),
             ),
@@ -77,7 +78,7 @@ export const statelessRunsRouter = <
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
 
-                    return streamSSE(c, async (stream) => {
+                    return stream(c, async (stream) => {
                         const graphStream = graphManager.streamGraph({
                             input: state,
                             config,
@@ -85,16 +86,19 @@ export const statelessRunsRouter = <
                         });
 
                         for await (const update of graphStream) {
-                            await stream.writeSSE({
-                                data: JSON.stringify(update),
-                            });
+                            await stream.write(
+                                new TextEncoder().encode(
+                                    JSON.stringify(update) + "\n",
+                                ),
+                            );
                         }
                     }, async (err, stream) => {
                         console.error(err);
-                        await stream.writeSSE({
-                            data: JSON.stringify({ error: err.message }),
-                            event: "error",
-                        });
+                        await stream.write(
+                            new TextEncoder().encode(
+                                JSON.stringify({ error: err.message }) + "\n",
+                            ),
+                        );
                     });
                 } catch (error) {
                     c.status(500);

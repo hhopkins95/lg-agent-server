@@ -29,7 +29,22 @@ const res = await client.runStateless({
     },
 });
 
+const stream = await client.streamStateless({
+    json: {
+        state: {
+            input: {
+                content: "hello",
+            },
+        },
+    },
+});
+
 console.log(res);
+
+for await (const chunk of stream) {
+    console.log(chunk);
+}
+
 // const foo = await client["stateless-runs"].run.$get({
 
 // console.log(foo.body);
