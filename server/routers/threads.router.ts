@@ -66,7 +66,7 @@ export const threadsRouter = <GraphSpec extends GraphServerConfiguration>(
                 }
             },
         )
-        // Get All Assistant Threads
+        // List All Assistant Threads
         .get(
             "/assistantThreads/:assistantId",
             zValidator(

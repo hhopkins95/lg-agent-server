@@ -4,6 +4,8 @@ import { Hono } from "hono";
 import { statelessRunsRouter } from "./routers/stateless-runs.router.ts";
 import type { GraphServerConfiguration } from "./types.ts";
 import { assistantsRouter } from "./routers/assistants.router.ts";
+import { threadsRouter } from "./routers/threads.router.ts";
+import { threadRunsRouter } from "./routers/thread-runs.router.ts";
 /**
  * Creates a new graph server with the specified graphs and configuration
  * @param graphConfig Array of graph definitions
@@ -22,9 +24,10 @@ const createGraphHonoServer = <
   );
 
   return new Hono()
-    // .route("/threads", threadsRouter(graphConfig))
+    .route("/threads", threadsRouter(graphConfig))
     .route("/assistants", assistantsRouter(graphConfig))
-    .route("/stateless-runs", statelessRunsRouter(graphConfig));
+    .route("/stateless-runs", statelessRunsRouter(graphConfig))
+    .route("/thread-runs", threadRunsRouter(graphConfig));
 
   // Build up the app with proper typing by chaining routers
   // const app = mergeRoutes(new Hono(), ...fin);

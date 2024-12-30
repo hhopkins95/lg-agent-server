@@ -35,7 +35,16 @@ export const getClient = <Spec extends GraphServerConfiguration>(
     const createAssistant = withJsonResponse(hono_rc["assistants"].$post);
     const updateAssistant = withJsonResponse(hono_rc["assistants"][":id"].$put);
 
-    // Stateless runs router
+    // Threads router
+    const createThread = withJsonResponse(
+        hono_rc["threads"][":assistantId"].$post,
+    );
+    const getThread = withJsonResponse(hono_rc["threads"][":threadId"].$get);
+    const listAllAssistantThreads = withJsonResponse(
+        hono_rc["threads"]["assistantThreads"][":assistantId"].$get,
+    );
+
+    // Stateles-runs router
     const runStateless = withJsonResponse(hono_rc["stateless-runs"].run.$post);
 
     const streamStateless = async function* (
@@ -82,12 +91,37 @@ export const getClient = <Spec extends GraphServerConfiguration>(
         }
     };
 
+    // Thread-Runs router
+    const runThread = withJsonResponse(
+        hono_rc["thread-runs"].run[":threadId"].$post,
+    );
+    const resumeThreadRun = withJsonResponse(
+        hono_rc["thread-runs"].run[":threadId"].resume.$post,
+    );
+
+    const streamThread = "TODO";
+    const resumeThreadStream = "TODO";
+
     return {
+        // Assistants
         getAllAssistants,
         getAssistant,
         createAssistant,
         updateAssistant,
+
+        // Threads
+        getThread,
+        createThread,
+        listAllAssistantThreads,
+
+        // Stateless runs
         runStateless,
         streamStateless,
+
+        // Thread runs
+        runThread,
+        resumeThreadRun,
+        streamThread,
+        resumeThreadStream,
     };
 };
