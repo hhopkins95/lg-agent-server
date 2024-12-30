@@ -54,3 +54,5 @@ export const graphSpecification = CreateGraphSpecification({
     default_config: defaultConfig,
     state_llm_stream_keys: streamStateKeys,
 });
+
+graph.invoke({}, {});

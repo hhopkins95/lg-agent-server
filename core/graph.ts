@@ -71,6 +71,8 @@ export class GraphManager<TGraph extends TGraphSpecification> {
   >;
   protected checkpointer: BaseCheckpointSaver;
   protected graphConfig: TGraph;
+  protected persistedGraph: TGraph["graph"];
+  protected statelessGraph: TGraph["graph"];
 
   /**
    * Creates a new GraphManager
@@ -89,7 +91,10 @@ export class GraphManager<TGraph extends TGraphSpecification> {
     this.graphConfig = graphConfig;
     this.appStorage = appStorage ?? new SQLiteAppStorage(":memory:");
     this.checkpointer = checkpointer ?? new MemorySaver();
-    this.graphConfig.graph.checkpointer = this.checkpointer;
+    // Create separate instances for stateless and persisted graphs
+    this.persistedGraph = graphConfig.graph;
+    this.statelessGraph = graphConfig.graph;
+    this.persistedGraph.checkpointer = this.checkpointer;
   }
 
   /**
@@ -324,6 +329,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
 
     // Get the state / config for this run
     const invokeVal = input ?? new Command({ resume: resumeValue }); // TODO -- resumeValue
+    const invokeGraph = thread_id ? this.persistedGraph : this.statelessGraph;
 
     try {
       if (thread_id) {
@@ -333,7 +339,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
           },
         });
       }
-      const res = await this.graphConfig.graph.invoke(invokeVal, invokeConfig);
+      const res = await invokeGraph.invoke(invokeVal, invokeConfig);
       if (thread_id) {
         await this.updateThread(thread_id, {
           values: res,
@@ -347,8 +353,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
       let latest_values: TGraph["output_annotation"]["State"] | undefined;
       if (thread_id) {
         // get latest state from the run via checkpointer
-        latest_values =
-          (await (this.graphConfig.graph.getState(invokeConfig))).values;
+        latest_values = (await (invokeGraph.getState(invokeConfig))).values;
 
         // save that to the thread if exists along with the error
         await this.updateThread(thread_id, {
@@ -398,6 +403,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
       }
     }
 
+    const invokeGraph = thread_id ? this.persistedGraph : this.statelessGraph;
     try {
       const invokeConfig = await this.getRunConfig({
         assistant_id,
@@ -407,7 +413,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
 
       const invokeVal = input ?? new Command({ resume: resumeValue });
 
-      const stream = await this.graphConfig.graph.stream(invokeVal, {
+      const stream = await invokeGraph.stream(invokeVal, {
         streamMode: ["values", "messages", "custom"],
         ...invokeConfig,
       });
