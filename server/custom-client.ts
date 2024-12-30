@@ -99,8 +99,100 @@ export const getClient = <Spec extends GraphServerConfiguration>(
         hono_rc["thread-runs"].run[":threadId"].resume.$post,
     );
 
-    const streamThread = "TODO";
-    const resumeThreadStream = "TODO";
+    const streamThread = async function* (
+        threadId: string,
+        input: Parameters<
+            typeof hono_rc["thread-runs"]["stream"][":threadId"]["$post"]
+        >[0],
+    ): AsyncGenerator<TStreamYield<Spec>> {
+        // @ts-expect-error
+        const response = await hono_rc["thread-runs"].stream[threadId].$post(
+            input,
+        );
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error("No readable stream available");
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Keep the last partial line in the buffer
+
+                for (const line of lines) {
+                    if (line.trim()) {
+                        yield JSON.parse(line);
+                    }
+                }
+            }
+
+            // Handle any remaining data
+            if (buffer.trim()) {
+                yield JSON.parse(buffer);
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    };
+
+    const resumeThreadStream = async function* (
+        threadId: string,
+        input: Parameters<
+            typeof hono_rc["thread-runs"]["stream"][":threadId"]["resume"][
+                "$post"
+            ]
+        >[0],
+    ): AsyncGenerator<TStreamYield<Spec>> {
+        // @ts-expect-error
+        const response = await hono_rc["thread-runs"].stream[threadId].resume
+            .$post(input);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error("No readable stream available");
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Keep the last partial line in the buffer
+
+                for (const line of lines) {
+                    if (line.trim()) {
+                        yield JSON.parse(line);
+                    }
+                }
+            }
+
+            // Handle any remaining data
+            if (buffer.trim()) {
+                yield JSON.parse(buffer);
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    };
 
     return {
         // Assistants
