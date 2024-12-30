@@ -13,7 +13,7 @@ export const statelessRunsRouter = <
 ) => {
     return new Hono()
         // Run Graph
-        .post(
+        .get(
             "/run",
             zValidator(
                 "json",
