@@ -296,13 +296,13 @@ export class GraphManager<TGraph extends TGraphSpecification> {
 
   // Keep existing invoke and stream implementations
   async invokeGraph({
-    state,
+    input,
     resumeValue,
     assistant_id,
     thread_id,
     config,
   }: {
-    state?: TGraph["output_annotation"]["State"];
+    input?: TGraph["input_annotation"]["State"];
     resumeValue?: unknown;
   } & TGetRunConfigParams<typeof this.graphConfig>): Promise<
     { success: true; values: TGraph["output_annotation"]["State"] } | {
@@ -311,7 +311,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
       error: string;
     }
   > {
-    if ((!resumeValue && !state) || (resumeValue && state)) {
+    if ((!resumeValue && !input) || (resumeValue && input)) {
       throw new Error("Exactly one of state or resumeValue must be provided");
     }
 
@@ -323,7 +323,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
     });
 
     // Get the state / config for this run
-    const invokeVal = state ?? new Command({ resume: resumeValue }); // TODO -- resumeValue
+    const invokeVal = input ?? new Command({ resume: resumeValue }); // TODO -- resumeValue
 
     try {
       if (thread_id) {
@@ -375,18 +375,18 @@ export class GraphManager<TGraph extends TGraphSpecification> {
    * @returns AsyncGenerator yielding state updates, LLM chunks, and status changes
    */
   async *streamGraph({
-    state,
+    input,
     resumeValue,
     assistant_id,
     thread_id,
     config,
   }: {
-    state?: TGraph["output_annotation"]["State"];
+    input?: TGraph["input_annotation"]["State"];
     resumeValue?: unknown;
   } & TGetRunConfigParams<typeof this.graphConfig>): AsyncGenerator<
     TStreamYield<TGraph>
   > {
-    if ((!resumeValue && !state) || (resumeValue && state)) {
+    if ((!resumeValue && !input) || (resumeValue && input)) {
       throw new Error("Exactly one of state or resumeValue must be provided");
     }
 
@@ -405,7 +405,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
         config,
       });
 
-      const invokeVal = state ?? new Command({ resume: resumeValue });
+      const invokeVal = input ?? new Command({ resume: resumeValue });
 
       const stream = await this.graphConfig.graph.stream(invokeVal, {
         streamMode: ["values", "messages", "custom"],

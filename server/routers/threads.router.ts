@@ -117,7 +117,7 @@ export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
 
                     const result = await graphManager.invokeGraph({
                         thread_id: threadId,
-                        state,
+                        input: state,
                         config,
                     });
 
@@ -197,7 +197,7 @@ export const threadsRouter = (graphSpec: GraphServerConfiguration) => {
                                 try {
                                     const stream = graphManager.streamGraph({
                                         thread_id: threadId,
-                                        state,
+                                        input: state,
                                         config,
                                     });
 

@@ -16,24 +16,32 @@ export const statelessRunsRouter = <
         .get(
             "/run",
             zValidator(
-                "json",
+                "param",
                 z.object({
-                    graph_input: graphSpec
-                        .input_schema as GraphSpec["input_schema"],
-                    config: graphSpec
-                        .config_schema as GraphSpec["config_schema"],
+                    graph_input: (graphSpec
+                        .input_schema as GraphSpec["input_schema"]).optional(),
+                    config: (graphSpec
+                        .config_schema as GraphSpec["config_schema"])
+                        .optional(),
                     assistant_id: z.string().optional(),
                 }),
+                (result, c) => {
+                    console.log("HERE");
+                    if (!result.success) {
+                        return c.text("Invalid!", 400);
+                    }
+                },
             ),
             async (c) => {
                 try {
-                    const { state, config, assistant_id } = await c.req.json();
+                    const { assistant_id, config, graph_input } = await c.req
+                        .valid("param");
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;
 
                     const result = await graphManager.invokeGraph({
-                        state,
+                        input: graph_input,
                         config,
                         assistant_id,
                     });
@@ -68,7 +76,7 @@ export const statelessRunsRouter = <
 
                     return streamSSE(c, async (stream) => {
                         const graphStream = graphManager.streamGraph({
-                            state,
+                            input: state,
                             config,
                             assistant_id,
                         });

@@ -8,15 +8,16 @@ import { GRAPH_REGISTRY } from "@/server/registry.ts";
 import { hc } from "hono/client";
 import { getClient } from "@/server/custom-client.ts";
 
-export const testGraphServerSpec = {
+const testGraphServerSpec = {
     ...graphSpecification,
     config_schema: ConfigurationSchema,
     input_schema: InputSchema,
     default_config: defaultConfig,
 } as const satisfies GraphServerConfiguration;
 
+export type TestGraphServerSpec = typeof testGraphServerSpec;
+
 const testGraphServer = createGraphHonoServer(testGraphServerSpec);
-type GraphServerType = typeof testGraphServer;
 
 // Register the graph with the registry
 GRAPH_REGISTRY.registerGraphManager(testGraphServerSpec);
@@ -25,7 +26,6 @@ export const TEST_GRAPH_APP = createBaseApp().route(
     `/test-graph`,
     testGraphServer,
 );
-export type AppType = typeof TEST_GRAPH_APP;
 
 // test client
 // const client = getClient<typeof testGraphServerSpec>("/test-graph"); // hc<AppType>("/test-graph");

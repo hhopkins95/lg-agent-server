@@ -87,7 +87,7 @@ describe("GraphStateManager", () => {
       const initialState = { messages: [], count: 0 };
       const result = await graphManager.invokeGraph({
         thread_id: testThread.id,
-        state: initialState,
+        input: initialState,
       });
       expect(result.success).toBe(true);
       if (result.success && result.values) {
@@ -103,7 +103,7 @@ describe("GraphStateManager", () => {
       };
       const stream = graphManager.streamGraph({
         thread_id: testThread.id,
-        state: initialState,
+        input: initialState,
       });
 
       const updates = [];
@@ -159,7 +159,7 @@ describe("GraphStateManager", () => {
       const initialState = { messages: [], count: 0 };
       await graphManager.invokeGraph({
         thread_id: thread.id,
-        state: initialState,
+        input: initialState,
       });
 
       const updatedThread = await graphManager.getThread(thread.id);
