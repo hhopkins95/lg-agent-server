@@ -37,8 +37,6 @@ export const statelessRunsRouter = <
                     const { assistant_id, config, graph_input } = c.req
                         .valid("json");
 
-                    console.log("GRAPH INPUT", graph_input, config);
-
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
                     ) as GraphManager<GraphSpec>;

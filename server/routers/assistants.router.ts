@@ -3,8 +3,13 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
+import type { GraphManager } from "@/core";
 
-export const assistantsRouter = (graphSpec: GraphServerConfiguration) => {
+export const assistantsRouter = <
+    GraphSpec extends GraphServerConfiguration,
+>(
+    graphSpec: GraphSpec,
+) => {
     const router = new Hono()
         // Get All Assistants
         .get(
@@ -13,7 +18,7 @@ export const assistantsRouter = (graphSpec: GraphServerConfiguration) => {
                 try {
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
-                    );
+                    ) as GraphManager<GraphSpec>;
                     const all_assistants = await graphManager
                         .listAllAssistants();
                     return c.json({
@@ -39,7 +44,7 @@ export const assistantsRouter = (graphSpec: GraphServerConfiguration) => {
                     const id = c.req.param("id");
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
-                    );
+                    ) as GraphManager<GraphSpec>;
                     const assistant = await graphManager.getAssistant(id);
                     return c.json({
                         assistant,
@@ -67,7 +72,7 @@ export const assistantsRouter = (graphSpec: GraphServerConfiguration) => {
                     const body = await c.req.json();
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
-                    );
+                    ) as GraphManager<GraphSpec>;
                     const assistant = await graphManager.createAssistant(body);
                     return c.json({
                         assistant,
@@ -101,7 +106,7 @@ export const assistantsRouter = (graphSpec: GraphServerConfiguration) => {
                     const updates = await c.req.json();
                     const graphManager = GRAPH_REGISTRY.getManager(
                         graphSpec.name,
-                    );
+                    ) as GraphManager<GraphSpec>;
                     const assistant = await graphManager.updateAssistant(
                         id,
                         updates,

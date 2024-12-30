@@ -3,6 +3,7 @@ import type { BaseCheckpointSaver } from "@langchain/langgraph";
 import { Hono } from "hono";
 import { statelessRunsRouter } from "./routers/stateless-runs.router.ts";
 import type { GraphServerConfiguration } from "./types.ts";
+import { assistantsRouter } from "./routers/assistants.router.ts";
 /**
  * Creates a new graph server with the specified graphs and configuration
  * @param graphConfig Array of graph definitions
@@ -22,7 +23,7 @@ const createGraphHonoServer = <
 
   return new Hono()
     // .route("/threads", threadsRouter(graphConfig))
-    // .route("/assistants", assistantsRouter(graphConfig))
+    .route("/assistants", assistantsRouter(graphConfig))
     .route("/stateless-runs", statelessRunsRouter(graphConfig));
 
   // Build up the app with proper typing by chaining routers

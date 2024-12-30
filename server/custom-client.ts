@@ -29,6 +29,12 @@ export const getClient = <Spec extends GraphServerConfiguration>(
     type HonoAppType = ReturnType<typeof createGraphHonoServer<Spec>>;
     const hono_rc = hc<HonoAppType>(url);
 
+    // Assistants router
+    const getAllAssistants = withJsonResponse(hono_rc["assistants"].$get);
+    const getAssistant = withJsonResponse(hono_rc["assistants"][":id"].$get);
+    const createAssistant = withJsonResponse(hono_rc["assistants"].$post);
+    const updateAssistant = withJsonResponse(hono_rc["assistants"][":id"].$put);
+
     // Stateless runs router
     const runStateless = withJsonResponse(hono_rc["stateless-runs"].run.$post);
 
@@ -77,6 +83,10 @@ export const getClient = <Spec extends GraphServerConfiguration>(
     };
 
     return {
+        getAllAssistants,
+        getAssistant,
+        createAssistant,
+        updateAssistant,
         runStateless,
         streamStateless,
     };

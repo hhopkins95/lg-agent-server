@@ -21,13 +21,13 @@ async function callModel(
     const llm = getLLM("claude3_5");
     const input = state.message_input.content;
     console.log("Input: ", input);
-    await llm.invoke([new HumanMessage(input)], {
+    const result = await llm.invoke([new HumanMessage(input)], {
         tags: ["messages"], // tagged as state stream key
     });
     console.log("Stream Process Complete");
 
     return {
-        // messages: [result],
+        messages: [result],
         count: (state.count ?? 0) + 1,
     };
 }

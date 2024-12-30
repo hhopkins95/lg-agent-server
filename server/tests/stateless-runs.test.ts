@@ -23,34 +23,29 @@ const res = await client.runStateless({
     json: {
         graph_input: {
             message_input: {
-                content: "",
+                content: "Hello",
             },
         },
     },
 });
 
-const stream = await client.streamStateless({
-    json: {
-        state: {
-            message_input: {
-                content: "Hello there. What is your name?",
-            },
-        },
-    },
-});
+console.log(res.values?.messages);
+// const stream = await client.streamStateless({
+//     json: {
+//         state: {
+//             message_input: {
+//                 content: "Hello there. What is your name?",
+//             },
+//         },
+//     },
+// });
 
-console.log(res);
-
-for await (const chunk of stream) {
-    if (chunk.state_llm_stream_data) {
-        console.log("Streamed : ", chunk.state_llm_stream_data.chunkContent);
-    } else if (chunk.full_state_update) {
-        console.log("Full state update : ", chunk.full_state_update);
-    } else {
-        console.log("SOMETHING ELSE");
-    }
-}
-
-// const foo = await client["stateless-runs"].run.$get({
-
-// console.log(foo.body);
+// for await (const chunk of stream) {
+//     if (chunk.state_llm_stream_data) {
+//         console.log("Streamed : ", chunk.state_llm_stream_data.chunkContent);
+//     } else if (chunk.full_state_update) {
+//         console.log("Full state update : ", chunk.full_state_update);
+//     } else {
+//         console.log("SOMETHING ELSE");
+//     }
+// }
