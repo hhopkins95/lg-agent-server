@@ -19,8 +19,6 @@ export type TestGraphServerSpec = typeof testGraphServerSpec;
 
 const testGraphServer = createGraphHonoServer(testGraphServerSpec);
 
-export type TestServerHonoType = typeof testGraphServer;
-
 // Register the graph with the registry
 GRAPH_REGISTRY.registerGraphManager(testGraphServerSpec);
 
@@ -28,3 +26,15 @@ export const TEST_GRAPH_APP = createBaseApp().route(
     `/test-graph`,
     testGraphServer,
 );
+
+/**
+ * example usage :
+ *
+ * import {getGraphClient}  from "server/custom-client.ts"
+ * const client = getClient<TestGraphServerSpec>("{base-url}/test-graph")>
+ *
+ * Bun.serve({
+ *     port: 8080,
+ *     fetch: TEST_GRAPH_APP.fetch,
+ * });
+ */
