@@ -16,8 +16,6 @@ const createGraphHonoServer = <
   Spec extends GraphServerConfiguration,
 >(
   graphConfig: Spec,
-  appStorage?: AppStorage,
-  checkpointer?: BaseCheckpointSaver,
 ) => {
   return new Hono()
     .route("/threads", threadsRouter(graphConfig))
