@@ -33,7 +33,7 @@ const stream = await client.streamStateless({
     json: {
         state: {
             message_input: {
-                content: "",
+                content: "Hello there. What is your name?",
             },
         },
     },
@@ -43,8 +43,7 @@ console.log(res);
 
 for await (const chunk of stream) {
     if (chunk.state_llm_stream_data) {
-        // @ts-expect-error
-        // console.log(chunk.state_llm_stream_data.chunk.kwargs);
+        console.log("Streamed : ", chunk.state_llm_stream_data.chunkContent);
     } else if (chunk.full_state_update) {
         console.log("Full state update : ", chunk.full_state_update);
     } else {

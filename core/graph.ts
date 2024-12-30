@@ -8,9 +8,10 @@ import type {
   TThread,
 } from "./types.ts";
 import type { AppStorage, ThreadFilter } from "./storage/types.ts";
-import type {
-  AIMessageChunk,
-  ToolMessageChunk,
+import {
+  type AIMessageChunk,
+  isAIMessageChunk,
+  type ToolMessageChunk,
 } from "@langchain/core/messages";
 import {
   type BaseCheckpointSaver,
@@ -432,7 +433,6 @@ export class GraphManager<TGraph extends TGraphSpecification> {
       }
 
       for await (const [eventType, data] of stream) {
-        console.log({ eventType });
         // Handle interrupts
         if (eventType === "custom" && data.type === "interrupt") {
           const interruptData = data.data as TInterrupt;
@@ -472,6 +472,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
             LLMStreamMeta,
           ];
 
+          // console.log(isAIMessageChunk(chunk));
           // Handle state stream keys
           const state_stream_keys = this.graphConfig.state_llm_stream_keys;
           const state_key = getStreamKeyFromMetaTags(
@@ -480,12 +481,13 @@ export class GraphManager<TGraph extends TGraphSpecification> {
           );
 
           if (state_key) {
+            // console.log("AB", chunk);
             yield {
               state_llm_stream_data: {
                 // @ts-expect-error TODO -- Fix this?lkk
                 key: state_key as TGraph extends
                   TGraphSpecification<any, any, any, infer K, any> ? K : never,
-                chunk,
+                chunkContent: chunk.content as string, // TODO -- add capability for non-string chunks...
                 meta,
               },
             };
@@ -504,7 +506,7 @@ export class GraphManager<TGraph extends TGraphSpecification> {
               other_llm_stream_data: {
                 key: other_key as TGraph extends
                   TGraphSpecification<any, any, any, infer K> ? K : never,
-                chunk,
+                chunkContent: chunk.content as string, // TODO -- same ^^
                 meta,
               },
             };

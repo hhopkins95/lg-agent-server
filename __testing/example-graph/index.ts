@@ -18,8 +18,9 @@ async function callModel(
     >,
 ): Promise<typeof TotalStateAnnotation.Update> {
     console.log("Beginning Test Stream Process...");
-    const llm = getLLM("qwen2_5__05b");
+    const llm = getLLM("claude3_5");
     const input = state.message_input.content;
+    console.log("Input: ", input);
     await llm.invoke([new HumanMessage(input)], {
         tags: ["messages"], // tagged as state stream key
     });

@@ -108,12 +108,12 @@ export type TStreamYield<TGraph extends TGraphSpecification> = {
   status_change?: TThread<TGraph["input_annotation"]>["status"];
   state_llm_stream_data?: {
     key: TGraph extends TGraphSpecification<any, any, infer K, any> ? K : never;
-    chunk: AIMessageChunk | ToolMessageChunk;
+    chunkContent: string; // AIMessageChunk | ToolMessageChunk;
     meta: LLMStreamMeta;
   };
   other_llm_stream_data?: {
     key: TGraph extends TGraphSpecification<any, any, any, infer K> ? K : never;
-    chunk: AIMessageChunk | ToolMessageChunk;
+    chunkContent: string; // AIMessageChunk | ToolMessageChunk;
     meta: LLMStreamMeta;
   };
 };
