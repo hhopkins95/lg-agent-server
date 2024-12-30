@@ -22,7 +22,7 @@ console.log("Listening on http://localhost:8080");
 const res = await client.runStateless({
     json: {
         graph_input: {
-            input: {
+            message_input: {
                 content: "",
             },
         },
@@ -32,8 +32,8 @@ const res = await client.runStateless({
 const stream = await client.streamStateless({
     json: {
         state: {
-            input: {
-                content: "hello",
+            message_input: {
+                content: "",
             },
         },
     },

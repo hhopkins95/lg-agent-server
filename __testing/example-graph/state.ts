@@ -9,11 +9,11 @@ import { z } from "zod";
 
 // Input
 export const InputAnnotation = Annotation.Root({
-    input: MessageInputAnnotation,
+    message_input: MessageInputAnnotation,
 });
 
 export const InputSchema = z.object({
-    input: MessageInputSchema,
+    message_input: MessageInputSchema,
 });
 
 assert<Equals<z.infer<typeof InputSchema>, typeof InputAnnotation.State>>;

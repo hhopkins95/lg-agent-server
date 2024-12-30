@@ -18,13 +18,13 @@ async function callModel(
 ): Promise<typeof TotalStateAnnotation.Update> {
     console.log("Beginning Test Stream Process...");
     const llm = getLLM("qwen2_5__05b");
-    // const result = await llm.invoke(state.messages, {
-    //     tags: ["messages"], // tagged as state stream key
-    // });
+    await llm.invoke(state.messages ?? [], {
+        tags: ["messages"], // tagged as state stream key
+    });
     console.log("Stream Process Complete");
     return {
         // messages: [result],
-        count: state.count + 1,
+        count: (state.count ?? 0) + 1,
     };
 }
 
@@ -43,8 +43,6 @@ const workflow = new StateGraph(
     // conditional edges (routers)
     .addEdge("callModel", "__end__");
 
-const graph = workflow.compile();
-
 export const graphSpecification = CreateGraphSpecification({
     workflow,
     name: "test_graph",
@@ -54,5 +52,3 @@ export const graphSpecification = CreateGraphSpecification({
     default_config: defaultConfig,
     state_llm_stream_keys: streamStateKeys,
 });
-
-graph.invoke({}, {});

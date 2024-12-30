@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { GraphManager } from "../graph";
-import { testGraphSpecification } from "../../__testing/test-graph";
+import { graphSpecification } from "../../__testing/example-graph";
 import { HumanMessage } from "@langchain/core/messages";
 import { SQLiteAppStorage } from "../storage/sqlite";
 
-const TestGraphDef = testGraphSpecification;
+const TestGraphDef = graphSpecification;
 
 describe("GraphStateManager", () => {
   let graphManager: GraphManager<typeof TestGraphDef>;
@@ -84,11 +84,15 @@ describe("GraphStateManager", () => {
     });
 
     it("should invoke graph with initial state", async () => {
-      const initialState = { messages: [], count: 0 };
       const result = await graphManager.invokeGraph({
         thread_id: testThread.id,
-        input: initialState,
+        input: {
+          message_input: {
+            content: "Hello",
+          },
+        },
       });
+      console.log({ result });
       expect(result.success).toBe(true);
       if (result.success && result.values) {
         expect(result.values.count).toBe(1);
@@ -103,7 +107,11 @@ describe("GraphStateManager", () => {
       };
       const stream = graphManager.streamGraph({
         thread_id: testThread.id,
-        input: initialState,
+        input: {
+          message_input: {
+            content: "Hello",
+          },
+        },
       });
 
       const updates = [];
@@ -159,7 +167,11 @@ describe("GraphStateManager", () => {
       const initialState = { messages: [], count: 0 };
       await graphManager.invokeGraph({
         thread_id: thread.id,
-        input: initialState,
+        input: {
+          message_input: {
+            content: "Hello",
+          },
+        },
       });
 
       const updatedThread = await graphManager.getThread(thread.id);
