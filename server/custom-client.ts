@@ -4,6 +4,7 @@ import { type Hono } from "hono";
 import { hc } from "hono/client";
 import type createGraphHonoServer from "./create-graph-server.ts";
 import type { GraphServerConfiguration } from "./types";
+import type { TStreamYield } from "../core/types";
 
 export const getClient = <Spec extends GraphServerConfiguration>(
     url: string,
@@ -14,11 +15,11 @@ export const getClient = <Spec extends GraphServerConfiguration>(
     // functions
     const runStateless = hono_rc["stateless-runs"].run.$get;
 
-    type StreamInput = Parameters<
-        typeof hono_rc["stateless-runs"]["stream"]["$get"]
-    >[0];
-
-    const streamStateless = (input: StreamInput) => {
+    const streamStateless = async function* (
+        input: Parameters<
+            typeof hono_rc["stateless-runs"]["stream"]["$get"]
+        >[0],
+    ): AsyncGenerator<TStreamYield<Spec>> {
         const route_url = hono_rc["stateless-runs"].stream.$url();
 
         const params = new URLSearchParams({
@@ -26,16 +27,25 @@ export const getClient = <Spec extends GraphServerConfiguration>(
             ...input?.json,
         }).toString();
 
-        // Use EventSource
         const eventSource = new EventSource(`${route_url}?${params}`);
 
-        eventSource.onmessage = (event) => {
-            console.log(event.data);
-        };
-
-        eventSource.onerror = (event) => {
-            console.error("EventSource error:", event);
-        };
+        try {
+            while (true) {
+                const message = await new Promise<TStreamYield<Spec>>(
+                    (resolve, reject) => {
+                        eventSource.onmessage = (event) => {
+                            resolve(JSON.parse(event.data));
+                        };
+                        eventSource.onerror = (error) => {
+                            reject(error);
+                        };
+                    },
+                );
+                yield message;
+            }
+        } finally {
+            eventSource.close();
+        }
     };
 
     return {

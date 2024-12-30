@@ -28,10 +28,24 @@ export const TEST_GRAPH_APP = createBaseApp().route(
 export type AppType = typeof TEST_GRAPH_APP;
 
 // test client
-const client = getClient<typeof testGraphServerSpec>("/test-graph"); // hc<AppType>("/test-graph");
+// const client = getClient<typeof testGraphServerSpec>("/test-graph"); // hc<AppType>("/test-graph");
 
 // const foo = await client["stateless-runs"].run.$post({
 //     json: {},
 // });
 
-// const stream = await client["stateless-runs"].stream.$url();
+// const stream = await client.streamStateless({
+//     json: {
+//         state: {
+//             input: {
+//                 content: "",
+//             },
+//         },
+//         config: {
+//             config_value: "default_config",
+//         },
+//     },
+// });
+
+// for await (const chunk of stream) {
+// }
