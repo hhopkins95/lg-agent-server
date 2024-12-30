@@ -6,6 +6,7 @@ import type {
 import {
   Annotation,
   type CompiledStateGraph,
+  type StateGraph,
   type StateSnapshot,
 } from "@langchain/langgraph";
 
@@ -25,7 +26,7 @@ export type TGraphSpecification<
   name: string;
   description?: string; // for documentation
 
-  graph: CompiledStateGraph<any, any, any, any>;
+  workflow: StateGraph<any, any, any, any>;
 
   // schemas
   input_annotation: TInputAnnotation;

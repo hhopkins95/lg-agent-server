@@ -15,6 +15,7 @@ import type {
 import {
   type BaseCheckpointSaver,
   Command,
+  CompiledStateGraph,
   MemorySaver,
 } from "@langchain/langgraph";
 import { SQLiteAppStorage } from "./storage/sqlite.ts";
@@ -71,8 +72,8 @@ export class GraphManager<TGraph extends TGraphSpecification> {
   >;
   protected checkpointer: BaseCheckpointSaver;
   protected graphConfig: TGraph;
-  protected persistedGraph: TGraph["graph"];
-  protected statelessGraph: TGraph["graph"];
+  protected persistedGraph: ReturnType<TGraph["workflow"]["compile"]>;
+  protected statelessGraph: ReturnType<TGraph["workflow"]["compile"]>;
 
   /**
    * Creates a new GraphManager
@@ -92,8 +93,12 @@ export class GraphManager<TGraph extends TGraphSpecification> {
     this.appStorage = appStorage ?? new SQLiteAppStorage(":memory:");
     this.checkpointer = checkpointer ?? new MemorySaver();
     // Create separate instances for stateless and persisted graphs
-    this.persistedGraph = graphConfig.graph;
-    this.statelessGraph = graphConfig.graph;
+    this.persistedGraph = graphConfig.workflow.compile() as ReturnType<
+      TGraph["workflow"]["compile"]
+    >;
+    this.statelessGraph = graphConfig.workflow.compile() as ReturnType<
+      TGraph["workflow"]["compile"]
+    >;
     this.persistedGraph.checkpointer = this.checkpointer;
   }
 

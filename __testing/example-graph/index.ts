@@ -46,7 +46,7 @@ const workflow = new StateGraph(
 const graph = workflow.compile();
 
 export const graphSpecification = CreateGraphSpecification({
-    graph,
+    workflow,
     name: "test_graph",
     config_annotation: ConfigurationAnnotation,
     input_annotation: InputAnnotation,
