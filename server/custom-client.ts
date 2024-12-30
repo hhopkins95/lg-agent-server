@@ -23,7 +23,7 @@ const withJsonResponse = <
     };
 };
 
-export const getClient = <Spec extends GraphServerConfiguration>(
+export const getGraphClient = <Spec extends GraphServerConfiguration>(
     url: string,
 ) => {
     type HonoAppType = ReturnType<typeof createGraphHonoServer<Spec>>;

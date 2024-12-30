@@ -1,9 +1,11 @@
+// TODO -- write actual tests
+
 // import {
 //     TEST_GRAPH_APP,
 //     type TestGraphServerSpec,
 //     type TestServerHonoType,
 // } from "@/__testing/example-graph/server";
-// import { getClient } from "../custom-client";
+// import { getGraphClient } from "../custom-client";
 // import { hc } from "hono/client";
 
 // // Start the server
@@ -12,18 +14,21 @@
 //     fetch: TEST_GRAPH_APP.fetch,
 // });
 
-// const client = getClient<TestGraphServerSpec>(
+// const client = getGraphClient<TestGraphServerSpec>(
 //     "http://localhost:8080/test-graph/",
 // );
 
 // console.log("Listening on http://localhost:8080");
 
 // // Using wrapped method (handles json parsing automatically)
-// const res = await client.updateAssistant({
+// const res = await client.runStateless({
 //     json: {
-//         config: {
-//             config_value: "new_config",
+//         graph_input: {
+//             message_input: {
+//                 content: "Hello",
+//             },
 //         },
 //     },
-//     param: { id: "test" },
 // });
+
+// console.log(res.values?.messages);

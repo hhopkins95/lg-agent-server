@@ -6,7 +6,7 @@ import { InputSchema } from "./state.ts";
 import { createBaseApp } from "@/server/create-base-app.ts";
 import { GRAPH_REGISTRY } from "@/server/registry.ts";
 import { hc } from "hono/client";
-import { getClient } from "@/server/custom-client.ts";
+import { getGraphClient } from "@/server/custom-client.ts";
 
 const testGraphServerSpec = {
     ...graphSpecification,
