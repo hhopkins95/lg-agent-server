@@ -1,0 +1,31 @@
+{
+  "name": "@agent-toolkit/example-graph",
+  "module": "index.ts",
+  "type": "module",
+  "exports": {
+    "./lib": {
+      "import": "./lib/index.ts"
+    },
+    "./lib/checkpointers": {
+      "import": "./lib/checkpointers/index.ts"
+    },
+    "./lib/graph-utils": {
+      "import": "./lib/graph-utils/index.ts"
+    },
+    "./lib/prompts": {
+      "import": "./lib/prompts/index.ts"
+    },
+    "./lib/models": {
+      "import": "./lib/models/index.ts"
+    },
+    "./lib/states": {
+      "import": "./lib/states/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

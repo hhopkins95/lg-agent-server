@@ -1,0 +1,35 @@
+{
+  "name": "@agent-toolkit/lib",
+  "module": "index.ts",
+  "exports": {
+    "./checkpointers": {
+      "import": "./checkpointers/index.ts"
+    },
+    "./graph-utils": {
+      "import": "./graph-utils/index.ts"
+    },
+    "./prompts": {
+      "import": "./prompts/index.ts"
+    },
+    "./models": {
+      "import": "./models/index.ts"
+    },
+    "./states": {
+      "import": "./states/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.26",
+    "@langchain/langgraph": "^0.2.38",
+    "@langchain/ollama": "^0.1.4",
+    "@langchain/openai": "^0.3.16",
+    "tslab": "^1.0.22",
+    "zod": "^3.24.1"
+  }
+}

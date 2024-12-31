@@ -1,10 +1,5 @@
 {
   "compilerOptions": {
-    // path remappings
-    "paths": {
-      "@/*": ["./*"]
-    },
-
     // Enable latest features
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",

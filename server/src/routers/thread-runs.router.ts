@@ -1,10 +1,10 @@
-import type { GraphRouter, GraphServerConfiguration } from "@/server/types.ts";
+import type { GraphRouter, GraphServerConfiguration } from "../types.ts";
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { GRAPH_REGISTRY } from "../registry";
-import type { GraphManager } from "@/core";
+import type { GraphManager } from "@agent-toolkit/core";
 
 export const threadRunsRouter = <GraphSpec extends GraphServerConfiguration>(
     graphSpec: GraphSpec,

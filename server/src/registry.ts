@@ -1,6 +1,8 @@
-import { GraphManager } from "@/core/graph";
-import type { AppStorage } from "@/core/storage/types";
-import type { TGraphSpecification } from "@/core/types";
+import { GraphManager } from "@agent-toolkit/core";
+import type {
+  AppStorage,
+  TGraphSpecification,
+} from "@agent-toolkit/core/types";
 import { BaseCheckpointSaver } from "@langchain/langgraph";
 
 /**
