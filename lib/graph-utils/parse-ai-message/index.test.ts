@@ -1,44 +1,48 @@
-import { stringToXmlBlocks as parseXml, type XML_Block } from "./index"; // adjust the path as needed
 import { describe, expect, it } from "bun:test";
+import {
+    blocksToXmlString,
+    stringToXmlBlocks as parseXml,
+    type XML_Block,
+} from "./index"; // adjust the path as needed
 
-describe("parseXml function", () => {
-    it("parses plain text with no tags", () => {
-        const input = "hello world";
-        const result = parseXml(input);
-        expect(result).toEqual(["hello world"]);
-    });
-
-    it("parses a single, fully closed tag", () => {
-        const input = "hello <foo>world</foo>";
-        const result = parseXml(input);
-        expect(result).toEqual([
+const CASES: Array<{
+    testCase: string;
+    string: string;
+    blocks: Array<string | XML_Block>;
+}> = [
+    {
+        testCase: "plain text with no tags",
+        string: "hello world",
+        blocks: ["hello world"],
+    },
+    {
+        testCase: "a single, fully closed tag",
+        string: "hello <foo>world</foo>",
+        blocks: [
             "hello ",
             {
                 tag: "foo",
                 partial: false,
                 content: ["world"],
             },
-        ]);
-    });
-
-    it("marks a tag as partial when closing tag is missing", () => {
-        const input = "hello <foo>world</foo";
-        const result = parseXml(input);
-        // Because the closing `</foo>` was never found, the parser lumps it into content
-        expect(result).toEqual([
+        ],
+    },
+    {
+        testCase: "tag marked as partial (missing closing tag)",
+        string: "hello <foo>world</foo",
+        blocks: [
             "hello ",
             {
                 tag: "foo",
                 partial: true,
                 content: ["world</foo"],
             },
-        ]);
-    });
-
-    it("parses nested tags properly", () => {
-        const input = "hello <foo>world<foo2>hello again</foo2>abc</foo>";
-        const result = parseXml(input);
-        expect(result).toEqual([
+        ],
+    },
+    {
+        testCase: "parses nested tags properly",
+        string: "hello <foo>world<foo2>hello again</foo2>abc</foo>",
+        blocks: [
             "hello ",
             {
                 tag: "foo",
@@ -53,28 +57,24 @@ describe("parseXml function", () => {
                     "abc",
                 ],
             },
-        ]);
-    });
-
-    it("treats stray < as literal text", () => {
-        const input = "Some stray < text <foo>inner</foo>";
-        const result = parseXml(input);
-        // The first '<' does not match a valid opening or closing tag,
-        // so it's treated as literal text.
-        expect(result).toEqual([
+        ],
+    },
+    {
+        testCase: "treats stray < as literal text",
+        string: "Some stray < text <foo>inner</foo>",
+        blocks: [
             "Some stray < text ",
             {
                 tag: "foo",
                 partial: false,
                 content: ["inner"],
             },
-        ]);
-    });
-
-    it("handles multiple top-level tags and text segments", () => {
-        const input = "<a>Alpha</a> Some text <b>Beta</b> more text";
-        const result = parseXml(input);
-        expect(result).toEqual([
+        ],
+    },
+    {
+        testCase: "multiple top-level tags and text segments",
+        string: "<a>Alpha</a> Some text <b>Beta</b> more text",
+        blocks: [
             {
                 tag: "a",
                 partial: false,
@@ -87,15 +87,12 @@ describe("parseXml function", () => {
                 content: ["Beta"],
             },
             " more text",
-        ]);
-    });
-
-    it("marks nested tags as partial if they (or their parents) never close", () => {
-        const input = "hello <foo>world <foo2>stuff";
-        const result = parseXml(input);
-        // <foo> never closes, so it’s partial.
-        // Inside <foo> is <foo2>, which also never closes, so it’s partial.
-        expect(result).toEqual([
+        ],
+    },
+    {
+        testCase: "nested partial tags",
+        string: "hello <foo>world <foo2>stuff",
+        blocks: [
             "hello ",
             {
                 tag: "foo",
@@ -109,12 +106,29 @@ describe("parseXml function", () => {
                     },
                 ],
             },
-        ]);
-    });
+        ],
+    },
+    {
+        testCase: "empty string yields empty array",
+        string: "",
+        blocks: [],
+    },
+];
 
-    it("returns an empty array for an empty string", () => {
-        const input = "";
-        const result = parseXml(input);
-        expect(result).toEqual([]);
+describe("string => blocks", () => {
+    CASES.forEach(({ testCase, string, blocks }) => {
+        it(testCase, () => {
+            const parsed = parseXml(string);
+            expect(parsed).toEqual(blocks);
+        });
+    });
+});
+
+describe("blocks => string", () => {
+    CASES.forEach(({ testCase, string, blocks }) => {
+        it(testCase, () => {
+            const rebuilt = blocksToXmlString(blocks);
+            expect(rebuilt).toEqual(string);
+        });
     });
 });
