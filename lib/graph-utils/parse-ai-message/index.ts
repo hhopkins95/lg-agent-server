@@ -12,7 +12,7 @@ export type XML_Block = {
  *   - Merges adjacent text so there's never two adjacent strings in the array.
  *   - Returns an array of strings or {tag, partial, content} objects.
  */
-export function parseXmlFromString(input: string): Array<string | XML_Block> {
+export function stringToXmlBlocks(input: string): Array<string | XML_Block> {
     let pos = 0;
 
     // Main function: parse until we find `</untilTag>` or end of string.
@@ -117,4 +117,34 @@ export function parseXmlFromString(input: string): Array<string | XML_Block> {
     // Start parsing at the top level
     const { blocks } = parseBlocks();
     return blocks;
+}
+
+/**
+ * Converts an array of (XML_Block | string) back to a single XML-like string.
+ * - Strings are output as-is.
+ * - For XML_Block with partial: false, we emit `<tag>...</tag>`.
+ * - For XML_Block with partial: true, we emit `<tag>...` (no closing tag).
+ *
+ * If the XML_Block content itself contains leftover text like `"world</foo"`,
+ * it will remain as is in the output (which may preserve "missing closing tag" scenarios).
+ */
+export function blocksToXmlString(blocks: Array<XML_Block | string>): string {
+    return blocks
+        .map((block) => {
+            if (typeof block === "string") {
+                return block;
+            }
+            // block is an XML_Block
+            const { tag, partial, content } = block;
+            const inner = blocksToXmlString(content);
+
+            if (!partial) {
+                // Fully closed tag
+                return `<${tag}>${inner}</${tag}>`;
+            } else {
+                // Partial => omit the closing tag
+                return `<${tag}>${inner}`;
+            }
+        })
+        .join("");
 }

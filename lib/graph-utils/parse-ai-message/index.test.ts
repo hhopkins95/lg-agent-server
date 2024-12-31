@@ -1,4 +1,4 @@
-import { parseXml, type XML_Block } from "./index"; // adjust the path as needed
+import { stringToXmlBlocks as parseXml, type XML_Block } from "./index"; // adjust the path as needed
 import { describe, expect, it } from "bun:test";
 
 describe("parseXml function", () => {
