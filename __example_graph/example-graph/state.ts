@@ -2,7 +2,7 @@ import {
     CustomMessagesAnnotation,
     MessageInputAnnotation,
     MessageInputSchema,
-} from "@/lib/states";
+} from "@agent-toolkit/lib/states";
 import { Annotation } from "@langchain/langgraph";
 import { assert, type Equals } from "tsafe";
 import { z } from "zod";

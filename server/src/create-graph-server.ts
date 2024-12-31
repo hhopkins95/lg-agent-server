@@ -4,6 +4,9 @@ import { statelessRunsRouter } from "./routers/stateless-runs.router.ts";
 import { threadRunsRouter } from "./routers/thread-runs.router.ts";
 import { threadsRouter } from "./routers/threads.router.ts";
 import type { GraphServerConfiguration } from "./types.ts";
+import { GRAPH_REGISTRY } from "./registry.ts";
+import type { AppStorage } from "@agent-toolkit/core";
+import type { BaseCheckpointSaver } from "@langchain/langgraph";
 /**
  * Creates a new graph server with the specified graphs and configuration
  * @param graphConfig Array of graph definitions
@@ -14,7 +17,11 @@ const createGraphHonoServer = <
   Spec extends GraphServerConfiguration,
 >(
   graphConfig: Spec,
+  appStorage?: AppStorage,
+  checkpointer?: BaseCheckpointSaver,
 ) => {
+  GRAPH_REGISTRY.registerGraphManager(graphConfig, appStorage, checkpointer);
+
   return new Hono()
     .route("/threads", threadsRouter(graphConfig))
     .route("/assistants", assistantsRouter(graphConfig))

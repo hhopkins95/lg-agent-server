@@ -1,5 +1,5 @@
-import { CreateGraphSpecification } from "@/core/graph";
-import { getLLM } from "@/lib/models/loadLLM";
+import { CreateGraphSpecification } from "@agent-toolkit/core";
+import { getLLM } from "@agent-toolkit/lib/models";
 import { type LangGraphRunnableConfig, StateGraph } from "@langchain/langgraph";
 import { ConfigurationAnnotation, defaultConfig } from "./config";
 import {

@@ -16,6 +16,10 @@ operating LangGraph agents.
 - given a graph, generate a Hono API server and typed hono RPC client for that
   graph
 
+**client/**
+
+- custom client for graph servers
+
 **cli/**
 
 - command line interface for LangGraph agents

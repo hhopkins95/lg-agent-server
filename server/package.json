@@ -2,6 +2,14 @@
   "name": "@agent-toolkit/server",
   "module": "src/index.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    },
+    "./types": {
+      "import": "./src/types.ts"
+    }
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

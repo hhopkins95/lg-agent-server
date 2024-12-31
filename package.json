@@ -5,6 +5,7 @@
     "core",
     "lib",
     "server",
-    "client"
+    "client",
+    "__example_graph"
   ]
 }

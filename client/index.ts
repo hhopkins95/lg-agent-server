@@ -1,11 +1,9 @@
 // Custom client -- uses app type to assert streaming endpoint return types using EventSource
 
-import { type Hono } from "hono";
 import { type ClientResponse, hc } from "hono/client";
-import { type createGraphHonoServer } from "../server/src/create-graph-server.ts";
-import type { GraphServerConfiguration } from "../server/src/types.ts";
-import type { TStreamYield } from "../core/src/types.ts";
-import type { statelessRunsRouter } from "../server/src/routers/stateless-runs.router.ts";
+import type { TStreamYield } from "@agent-toolkit/core/types";
+import type { createGraphHonoServer } from "@agent-toolkit/server";
+import type { GraphServerConfiguration } from "@agent-toolkit/server/types";
 
 type ExtractResponseType<T> = T extends Promise<ClientResponse<infer R>> ? R
     : never;

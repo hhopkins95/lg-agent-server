@@ -1,8 +1,15 @@
 {
   "name": "@agent-toolkit/client",
   "module": "index.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts"
+    }
+  },
   "type": "module",
   "devDependencies": {
+    "@agent-toolkit/core": "workspace:*",
+    "@agent-toolkit/server": "workspace:*",
     "@types/bun": "latest"
   },
   "peerDependencies": {

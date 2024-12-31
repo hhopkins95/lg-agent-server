@@ -1,12 +1,8 @@
-import createGraphHonoServer from "@/server/create-graph-server.ts";
-import type { GraphServerConfiguration } from "@/server/types";
+import { createBaseApp, createGraphHonoServer } from "@agent-toolkit/server";
+import type { GraphServerConfiguration } from "@agent-toolkit/server/types";
 import { ConfigurationSchema, defaultConfig } from "./config.ts";
 import { graphSpecification } from "./index.ts";
 import { InputSchema } from "./state.ts";
-import { createBaseApp } from "@/server/create-base-app.ts";
-import { GRAPH_REGISTRY } from "@/server/registry.ts";
-import { hc } from "hono/client";
-import { getGraphClient } from "@/server/custom-client.ts";
 
 const testGraphServerSpec = {
     ...graphSpecification,
@@ -18,9 +14,6 @@ const testGraphServerSpec = {
 export type TestGraphServerSpec = typeof testGraphServerSpec;
 
 const testGraphServer = createGraphHonoServer(testGraphServerSpec);
-
-// Register the graph with the registry
-GRAPH_REGISTRY.registerGraphManager(testGraphServerSpec);
 
 export const TEST_GRAPH_APP = createBaseApp().route(
     `/test-graph`,
