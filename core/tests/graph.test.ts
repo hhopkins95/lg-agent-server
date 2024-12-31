@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { GraphManager } from "../graph";
-import { graphSpecification } from "../../__testing/example-graph";
+import { GraphManager } from "../src/graph";
+import { graphSpecification } from "../../__example_graph/example-graph";
 import { HumanMessage } from "@langchain/core/messages";
-import { SQLiteAppStorage } from "../storage/sqlite";
+import { SQLiteAppStorage } from "../src/storage/sqlite";
 
 const TestGraphDef = graphSpecification;
 

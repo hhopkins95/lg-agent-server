@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { SQLiteAppStorage } from "../storage/sqlite.ts";
+import { SQLiteAppStorage } from "../src/storage/sqlite.ts";
 import { Annotation } from "@langchain/langgraph";
-import type { TAssistant, TThread, TThreadStatus } from "../types.ts";
+import type { TAssistant, TThread, TThreadStatus } from "../src/types.ts";
 
 describe("SQLiteAppStorage", () => {
   let storage: SQLiteAppStorage;
